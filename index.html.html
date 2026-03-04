@@ -213,7 +213,7 @@ const agencies = [
   { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 22300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
@@ -254,9 +254,9 @@ let markers = {};
 // MAP
 // ============================================================
 const map = L.map('map', { center: [46.8, 2.3], zoom: 6, zoomControl: true, attributionControl: false });
-L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
   maxZoom: 20,
-  attribution: '© OpenStreetMap France · © contributeurs OpenStreetMap'
+  attribution: '© OpenStreetMap · © CartoDB'
 }).addTo(map);
 L.control.attribution({ prefix: false }).addTo(map);
 

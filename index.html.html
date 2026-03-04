@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Dashboard 2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; color: #2c3e50; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  .header { background: #fff; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e8ecf0; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #2ecc71, #27ae60); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header-title { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+  .header-sub { font-size: 11px; color: #95a5a6; margin-top: 1px; }
+  .header-badge { background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid #c8e6c9; }
+
+  .month-bar { background: #fff; padding: 8px 24px; display: flex; gap: 5px; align-items: center; flex-shrink: 0; border-bottom: 1px solid #e8ecf0; overflow-x: auto; }
+  .month-label { font-size: 11px; color: #b0b8c1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 8px; white-space: nowrap; }
+  .month-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid #dde1e7; background: #f8f9fb; color: #7f8c8d; cursor: pointer; font-size: 12px; font-family: 'Segoe UI', sans-serif; font-weight: 500; transition: all 0.18s; white-space: nowrap; }
+  .month-btn:hover { border-color: #2ecc71; color: #27ae60; background: #f0fdf4; }
+  .month-btn.active { background: #2ecc71; border-color: #2ecc71; color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(46,204,113,0.3); }
+  .month-btn.no-data { opacity: 0.35; pointer-events: none; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+  #map { flex: 1; z-index: 1; }
+
+  .sidebar { width: 310px; background: #fff; display: flex; flex-direction: column; border-left: 1px solid #e8ecf0; overflow-y: auto; flex-shrink: 0; box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
+
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #f0f2f5; border-bottom: 1px solid #e8ecf0; }
+  .kpi-card { background: #fff; padding: 14px 16px; }
+  .kpi-label { font-size: 10px; color: #95a5a6; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .kpi-value { font-size: 22px; font-weight: 800; margin: 5px 0 3px; letter-spacing: -0.5px; }
+  .kpi-sub { font-size: 10px; color: #b0b8c1; }
+  .kpi-green  { color: #27ae60; }
+  .kpi-blue   { color: #2980b9; }
+  .kpi-orange { color: #e67e22; }
+  .kpi-pink   { color: #8e44ad; }
+
+  .agency-panel { flex: 1; padding: 16px; }
+  .panel-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; text-align: center; gap: 10px; }
+  .panel-placeholder p { font-size: 13px; color: #aab0b8; line-height: 1.6; }
+
+  .agency-detail { display: none; }
+  .agency-detail.visible { display: block; }
+
+  .agency-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+  .agency-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .agency-name { font-size: 15px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+  .agency-address { font-size: 11px; color: #95a5a6; margin-top: 3px; display: flex; align-items: flex-start; gap: 3px; line-height: 1.4; }
+
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; margin-bottom: 7px; }
+  .detail-row.green  { background: #f0fdf4; border: 1px solid #d1f2de; }
+  .detail-row.blue   { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .detail-row.orange { background: #fff7ed; border: 1px solid #fed7aa; }
+  .detail-row.purple { background: #faf5ff; border: 1px solid #e9d5ff; }
+  .detail-label { font-size: 11px; color: #7f8c8d; font-weight: 500; }
+  .detail-value { font-size: 17px; font-weight: 800; }
+  .detail-value.green  { color: #27ae60; }
+  .detail-value.blue   { color: #2980b9; }
+  .detail-value.orange { color: #e67e22; }
+  .detail-value.purple { color: #8e44ad; }
+
+  .no-data-badge { display: inline-block; background: #fef3c7; border: 1px solid #fde68a; color: #d97706; border-radius: 6px; padding: 3px 10px; font-size: 10px; font-weight: 600; margin-bottom: 12px; }
+
+  .month-trend { margin-top: 16px; }
+  .trend-title { font-size: 10px; color: #b0b8c1; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 8px; }
+  .trend-bars { display: flex; align-items: flex-end; gap: 3px; height: 52px; }
+  .trend-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .trend-bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.3s; min-height: 2px; background: #bde0fa; }
+  .trend-bar.active-bar { background: #2ecc71; }
+  .trend-month { font-size: 8px; color: #c0c8d0; font-weight: 500; }
+  .divider { height: 1px; background: #f0f2f5; margin: 12px 0; }
+
+  /* Légende */
+  .legend { position: absolute; bottom: 24px; left: 16px; z-index: 999; background: #fff; border: 1px solid #e8ecf0; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-family: 'Segoe UI', sans-serif; }
+  .legend-title { font-size: 10px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #555; margin-bottom: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Leaflet overrides */
+  .leaflet-popup-content-wrapper { background: #fff; border: 1px solid #e8ecf0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  .leaflet-popup-content { color: #2c3e50; font-family: 'Segoe UI', sans-serif; margin: 12px 16px; }
+  .leaflet-popup-tip { background: #fff; }
+  .leaflet-popup-close-button { color: #aaa !important; top: 6px !important; right: 8px !important; }
+  .popup-title { font-weight: 700; font-size: 13px; color: #1a1a2e; margin-bottom: 4px; }
+  .popup-addr { font-size: 10px; color: #95a5a6; margin-bottom: 7px; line-height: 1.4; }
+  .popup-row { font-size: 11px; color: #7f8c8d; margin-bottom: 3px; display: flex; justify-content: space-between; gap: 12px; }
+  .popup-val { font-weight: 700; color: #2c3e50; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #f5f6fa; }
+  ::-webkit-scrollbar-thumb { background: #dde1e7; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">📊</div>
+    <div>
+      <div class="header-title">Dashboard 2026</div>
+      <div class="header-sub">Tableau de bord interactif · Cliquez sur une agence</div>
+    </div>
+  </div>
+  <div class="header-badge">🇫🇷 17 agences</div>
+</div>
+
+<div class="month-bar">
+  <span class="month-label">Mois :</span>
+  <div id="month-buttons"></div>
+</div>
+
+<div class="main">
+  <div id="map">
+    <div class="legend">
+      <div class="legend-title">Groupes</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2980b9"></div>Novelty</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>BBS</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>Lagoona</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>On Stage / Potar / De Préf / Lagoona</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>Planet / Music Live</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ccc"></div>Aucune donnée ce mois</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Intermittents</div>
+        <div class="kpi-value kpi-green" id="kpi-intermt">—</div>
+        <div class="kpi-sub" id="kpi-intermt-sub">total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bulletins</div>
+        <div class="kpi-value kpi-blue" id="kpi-bullets">—</div>
+        <div class="kpi-sub" id="kpi-bullets-sub">total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Masse Salariale</div>
+        <div class="kpi-value kpi-orange" id="kpi-masse">—</div>
+        <div class="kpi-sub">cumulé</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bull. / Intermt.</div>
+        <div class="kpi-value kpi-pink" id="kpi-ratio">—</div>
+        <div class="kpi-sub">ratio moyen</div>
+      </div>
+    </div>
+
+    <div class="agency-panel">
+      <div class="panel-placeholder" id="placeholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c8d0d8" stroke-width="1.5">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5"/>
+        </svg>
+        <p>Cliquez sur une agence<br>pour afficher son détail</p>
+      </div>
+
+      <div class="agency-detail" id="agency-detail">
+        <div class="agency-header">
+          <div class="agency-dot" id="detail-dot"></div>
+          <div>
+            <div class="agency-name" id="detail-name"></div>
+            <div class="agency-address">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#95a5a6" style="flex-shrink:0;margin-top:1px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+              <span id="detail-address"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="no-data-msg" class="no-data-badge" style="display:none">⚠ Aucune donnée ce mois</div>
+
+        <div class="detail-row green">
+          <div class="detail-label">Intermittents</div>
+          <div class="detail-value green" id="detail-intermt">—</div>
+        </div>
+        <div class="detail-row blue">
+          <div class="detail-label">Bulletins de paie</div>
+          <div class="detail-value blue" id="detail-bullets">—</div>
+        </div>
+        <div class="detail-row orange">
+          <div class="detail-label">Masse salariale</div>
+          <div class="detail-value orange" id="detail-masse">—</div>
+        </div>
+        <div class="detail-row purple">
+          <div class="detail-label">Coût moyen / bulletin</div>
+          <div class="detail-value purple" id="detail-ratio">—</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="month-trend">
+          <div class="trend-title">Bulletins — évolution annuelle</div>
+          <div class="trend-bars" id="trend-bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — mis à jour automatiquement par export_dashboard.py
+// ============================================================
+const MONTHS = ['Janv','Fév','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+
+/* ==BEGIN_DATA== */
+const agencies = [
+  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 22300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[230, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[660, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2399, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[22, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[29, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[141, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+];
+
+const monthHasData = [
+  true,  // Janv
+  true,  // Fév
+  false,  // Mars
+  false,  // Avril
+  false,  // Mai
+  false,  // Juin
+  false,  // Juil
+  false,  // Août
+  false,  // Sept
+  false,  // Oct
+  false,  // Nov
+  false,  // Déc
+];
+/* ==END_DATA== */
+
+// ============================================================
+// STATE
+// ============================================================
+let currentMonth = 0;
+let selectedAgency = null;
+let markers = {};
+
+// ============================================================
+// MAP
+// ============================================================
+const map = L.map('map', { center: [46.8, 2.3], zoom: 6, zoomControl: true, attributionControl: false });
+L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+  maxZoom: 20,
+  attribution: '© OpenStreetMap France · © contributeurs OpenStreetMap'
+}).addTo(map);
+L.control.attribution({ prefix: false }).addTo(map);
+
+// ============================================================
+// MARKERS
+// ============================================================
+function markerIcon(agency, month, selected) {
+  const b = agency.bullets[month];
+  const hasData = b > 0 || agency.intermt[month] > 0;
+  const color = hasData ? agency.color : '#ccc';
+  const label = b > 9999 ? Math.round(b/1000)+'k' : (b > 0 ? b : '·');
+  const size = selected ? 42 : 36;
+  const shadow = selected
+    ? `0 0 0 4px ${agency.color}44, 0 4px 14px rgba(0,0,0,0.22)`
+    : '0 3px 10px rgba(0,0,0,0.18)';
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};border:2.5px solid ${selected?'#fff':'rgba(255,255,255,0.9)'};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:${b>999?'9':'10'}px;font-weight:800;color:#fff;font-family:'Segoe UI',sans-serif;text-shadow:0 1px 2px rgba(0,0,0,0.25)">${label}</span></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size],
+    popupAnchor: [0, -(size+4)],
+  });
+}
+
+function buildPopup(agency, month) {
+  const i = agency.intermt[month];
+  const b = agency.bullets[month];
+  const m = agency.masse[month];
+  return `
+    <div class="popup-title">${agency.name}</div>
+    <div class="popup-addr">📍 ${agency.address}</div>
+    <div class="popup-row">Intermittents <span class="popup-val">${i||'—'}</span></div>
+    <div class="popup-row">Bulletins <span class="popup-val">${b||'—'}</span></div>
+    <div class="popup-row">Masse salariale <span class="popup-val">${m>0?m.toLocaleString('fr-FR')+' €':'À saisir'}</span></div>`;
+}
+
+agencies.forEach(agency => {
+  const marker = L.marker([agency.lat, agency.lng], { icon: markerIcon(agency, 0, false) }).addTo(map);
+  marker.bindPopup(buildPopup(agency, 0), { closeButton: true, maxWidth: 230 });
+  marker.on('click', () => selectAgency(agency.id));
+  markers[agency.id] = marker;
+});
+
+// ============================================================
+// SELECT AGENCY
+// ============================================================
+function selectAgency(id) {
+  selectedAgency = id;
+  const agency = agencies.find(a => a.id === id);
+  agencies.forEach(a => markers[a.id].setIcon(markerIcon(a, currentMonth, a.id === id)));
+
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('agency-detail').classList.add('visible');
+
+  const i = agency.intermt[currentMonth];
+  const b = agency.bullets[currentMonth];
+  const m = agency.masse[currentMonth];
+  const hasData = i > 0 || b > 0;
+
+  document.getElementById('detail-dot').style.background = agency.color;
+  document.getElementById('detail-name').textContent = agency.name;
+  document.getElementById('detail-address').textContent = agency.address;
+  document.getElementById('no-data-msg').style.display = hasData ? 'none' : 'inline-block';
+  document.getElementById('detail-intermt').textContent = i || '—';
+  document.getElementById('detail-bullets').textContent = b || '—';
+  document.getElementById('detail-masse').textContent = m > 0 ? m.toLocaleString('fr-FR') + ' €' : 'À saisir';
+  document.getElementById('detail-ratio').textContent = (m > 0 && b > 0) ? Math.round(m/b).toLocaleString('fr-FR') + ' €' : '—';
+
+  const maxB = Math.max(...agency.bullets, 1);
+  document.getElementById('trend-bars').innerHTML = agency.bullets.map((bv, idx) => `
+    <div class="trend-bar-wrap">
+      <div class="trend-bar ${idx===currentMonth?'active-bar':''}" style="height:${Math.max(2,Math.round((bv/maxB)*46))}px" title="${MONTHS[idx]}: ${bv}"></div>
+      <div class="trend-month">${MONTHS[idx][0]}</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// SELECT MONTH
+// ============================================================
+function selectMonth(idx) {
+  currentMonth = idx;
+  document.querySelectorAll('.month-btn').forEach((btn, i) => btn.classList.toggle('active', i===idx));
+  agencies.forEach(a => {
+    markers[a.id].setIcon(markerIcon(a, idx, a.id===selectedAgency));
+    markers[a.id].setPopupContent(buildPopup(a, idx));
+  });
+  updateKPIs();
+  if (selectedAgency) selectAgency(selectedAgency);
+}
+
+// ============================================================
+// KPIs
+// ============================================================
+function updateKPIs() {
+  const totalI = agencies.reduce((s,a) => s+(a.intermt[currentMonth]||0), 0);
+  const totalB = agencies.reduce((s,a) => s+(a.bullets[currentMonth]||0), 0);
+  const totalM = agencies.reduce((s,a) => s+(a.masse[currentMonth]||0), 0);
+  document.getElementById('kpi-intermt').textContent = totalI.toLocaleString('fr-FR')||'—';
+  document.getElementById('kpi-bullets').textContent = totalB.toLocaleString('fr-FR')||'—';
+  document.getElementById('kpi-masse').textContent   = totalM>0 ? totalM.toLocaleString('fr-FR')+' €' : 'À saisir';
+  document.getElementById('kpi-ratio').textContent   = totalI>0 ? (totalB/totalI).toFixed(1) : '—';
+  document.getElementById('kpi-intermt-sub').textContent = MONTHS[currentMonth];
+  document.getElementById('kpi-bullets-sub').textContent = MONTHS[currentMonth];
+}
+
+// Génération des boutons de mois
+(function() {
+  const months = ['Janv','Fév','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  const container = document.getElementById('month-buttons');
+  months.forEach((m, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = m;
+    btn.className = 'month-btn' + (i === 0 ? ' active' : '') + (!monthHasData[i] ? ' no-data' : '');
+    btn.onclick = () => selectMonth(i);
+    container.appendChild(btn);
+  });
+})();
+
+updateKPIs();
+</script>
+</body>
+</html>

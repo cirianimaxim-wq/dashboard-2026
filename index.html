@@ -6,6 +6,19 @@
 <title>Dashboard — Dashboard 2026</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@media print {
+  .year-bar, .month-bar, .header-badge, .sidebar, #map .legend, .leaflet-control-zoom { display:none !important; }
+  body { height:auto !important; overflow:visible !important; }
+  .header { box-shadow:none; border-bottom:2px solid #2ecc71; }
+  .main { display:block !important; }
+  #map { display:none !important; }
+  #print-report { display:block !important; }
+  .print-page { page-break-after: always; }
+}
+#print-report { display:none; padding:24px; font-family:'Segoe UI',sans-serif; }
+</style>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', sans-serif; background: #f5f6fa; color: #2c3e50; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -17,6 +30,11 @@
   .header-sub { font-size: 11px; color: #95a5a6; margin-top: 1px; }
   .header-badge { background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid #c8e6c9; }
 
+  .year-bar { background: #1a1a2e; padding: 6px 24px; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .year-label { font-size:11px; color:#6c7a8d; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-right:4px; }
+  .year-btn { padding:4px 20px; border-radius:20px; border:1px solid #3a4a5c; background:transparent; color:#8a9ab0; cursor:pointer; font-size:13px; font-family:'Segoe UI',sans-serif; font-weight:700; transition:all 0.18s; }
+  .year-btn:hover { border-color:#2ecc71; color:#2ecc71; }
+  .year-btn.active { background:#2ecc71; border-color:#2ecc71; color:#fff; box-shadow:0 2px 8px rgba(46,204,113,0.3); }
   .month-bar { background: #fff; padding: 8px 24px; display: flex; gap: 5px; align-items: center; flex-shrink: 0; border-bottom: 1px solid #e8ecf0; overflow-x: auto; }
   .month-label { font-size: 11px; color: #b0b8c1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 8px; white-space: nowrap; }
   .month-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid #dde1e7; background: #f8f9fb; color: #7f8c8d; cursor: pointer; font-size: 12px; font-family: 'Segoe UI', sans-serif; font-weight: 500; transition: all 0.18s; white-space: nowrap; }
@@ -24,10 +42,11 @@
   .month-btn.active { background: #2ecc71; border-color: #2ecc71; color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(46,204,113,0.3); }
   .month-btn.no-data { opacity: 0.35; pointer-events: none; }
 
-  .main { display: flex; flex: 1; overflow: hidden; }
+  .main { display: flex; flex: 1; overflow: hidden; position: relative; }
+  #table-view { display:none; flex:1; overflow:auto; padding:16px; background:#f5f6fa; flex-direction:column; }
   #map { flex: 1; z-index: 1; }
 
-  .sidebar { width: 310px; background: #fff; display: flex; flex-direction: column; border-left: 1px solid #e8ecf0; overflow-y: auto; flex-shrink: 0; box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
+  .sidebar { width: 380px; background: #fff; display: flex; flex-direction: column; border-left: 1px solid #e8ecf0; overflow-y: auto; flex-shrink: 0; box-shadow: -2px 0 8px rgba(0,0,0,0.04); }
 
   .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #f0f2f5; border-bottom: 1px solid #e8ecf0; }
   .kpi-card { background: #fff; padding: 14px 16px; }
@@ -90,6 +109,92 @@
   .popup-row { font-size: 11px; color: #7f8c8d; margin-bottom: 3px; display: flex; justify-content: space-between; gap: 12px; }
   .popup-val { font-weight: 700; color: #2c3e50; }
 
+  /* Masse salariale totale en header */
+  .header-kpi-badge { display:flex; align-items:center; gap:8px; border:1.5px solid #e8ecf0; border-radius:10px; padding:5px 12px; flex-shrink:0; }
+  .header-kpi-icon { font-size:18px; }
+  .header-kpi-label { font-size:9px; color:#95a5a6; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .header-kpi-value { font-size:16px; font-weight:900; letter-spacing:-0.5px; line-height:1.2; }
+  .masse-total-badge { display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#fff7ed,#fff); border:1.5px solid #fed7aa; border-radius:10px; padding:6px 16px; flex-shrink:0; }
+  .masse-total-label { font-size:10px; color:#b0b8c1; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .masse-total-value { font-size:18px; font-weight:900; color:#e67e22; letter-spacing:-0.5px; }
+
+  /* KPI strip */
+  .kpi-strip { display:flex; border-bottom:1px solid #e8ecf0; }
+  .kpi-item { flex:1; padding:12px 10px; text-align:center; border-right:1px solid #e8ecf0; }
+  .kpi-item:last-child { border-right:none; }
+  .kpi-item-label { font-size:11px; color:#95a5a6; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:4px; }
+  .kpi-item-value { font-size:22px; font-weight:900; letter-spacing:-0.5px; }
+  .kpi-item-sub { font-size:11px; color:#b0b8c1; margin-top:2px; }
+
+  /* Agency detail redesign */
+  .agency-header-band { padding:14px 16px 10px; border-bottom:1px solid #f0f2f5; }
+  .agency-title-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .agency-color-bar { width:4px; height:22px; border-radius:2px; flex-shrink:0; }
+  .agency-name { font-size:18px; font-weight:800; color:#1a1a2e; }
+  .agency-address { font-size:12px; color:#95a5a6; margin-left:12px; display:flex; align-items:flex-start; gap:3px; line-height:1.5; }
+
+  /* Stat cards */
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 16px; }
+  .stat-card { border-radius:10px; padding:10px 12px; }
+  .stat-card.green  { background:#f0fdf4; border:1px solid #d1f2de; }
+  .stat-card.blue   { background:#eff6ff; border:1px solid #bfdbfe; }
+  .stat-card.orange { background:#fff7ed; border:1px solid #fed7aa; }
+  .stat-card.purple { background:#faf5ff; border:1px solid #e9d5ff; }
+  .stat-card-icon { font-size:20px; margin-bottom:5px; }
+  .stat-card-label { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:5px; }
+  .stat-card.green  .stat-card-label { color:#27ae60; }
+  .stat-card.blue   .stat-card-label { color:#2980b9; }
+  .stat-card.orange .stat-card-label { color:#e67e22; }
+  .stat-card.purple .stat-card-label { color:#8e44ad; }
+  .stat-card-value { font-size:26px; font-weight:900; letter-spacing:-0.5px; }
+  .stat-card.green  .stat-card-value { color:#27ae60; }
+  .stat-card.blue   .stat-card-value { color:#2980b9; }
+  .stat-card.orange .stat-card-value { color:#e67e22; }
+  .stat-card.purple .stat-card-value { color:#8e44ad; }
+  .stat-card-sub { font-size:11px; color:#aab0b8; margin-top:3px; }
+
+  /* Masse totale card — full width */
+  .stat-card-full { border-radius:10px; padding:10px 14px; margin:0 16px 8px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#fff7ed,#fffbf5); border:1px solid #fed7aa; }
+  .stat-card-full-left .label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#e67e22; }
+  .stat-card-full-left .sub { font-size:9px; color:#aab0b8; margin-top:1px; }
+  .stat-card-full-value { font-size:26px; font-weight:900; color:#e67e22; letter-spacing:-0.5px; }
+
+  /* Chart */
+  .chart-section { padding:0 16px 14px; }
+  .chart-title { font-size:12px; color:#b0b8c1; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:8px; }
+  .chart-wrap { position:relative; height:70px; }
+  .chart-bars { display:flex; align-items:flex-end; gap:3px; height:56px; }
+  .chart-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .chart-bar { width:100%; border-radius:3px 3px 0 0; transition:height 0.3s; min-height:2px; }
+  .chart-bar.intermt-bar { background:#d1f2de; }
+  .chart-bar.bullets-bar { background:#bfdbfe; }
+  .chart-bar.active .intermt-bar { background:#27ae60; }
+  .chart-bar.active .bullets-bar { background:#2980b9; }
+  .chart-month { font-size:7px; color:#c0c8d0; font-weight:600; text-align:center; }
+  .chart-legend { display:flex; gap:10px; margin-top:6px; }
+  .chart-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#7f8c8d; }
+  .chart-legend-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* Group summary blocks */
+  .group-blocks { padding: 0 16px 14px; }
+  .group-block { border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .group-block.blue  { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .group-block.orange { background: #fff7ed; border: 1px solid #fed7aa; }
+  .group-block.purple { background: #faf5ff; border: 1px solid #e9d5ff; }
+  .group-block-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .group-block.blue   .group-block-title { color: #2980b9; }
+  .group-block.orange .group-block-title { color: #e67e22; }
+  .group-block.purple .group-block-title { color: #8e44ad; }
+  .group-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .group-stat { text-align: center; }
+  .group-stat-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #95a5a6; margin-bottom: 3px; }
+  .group-stat-value { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+  .group-block.blue   .group-stat-value { color: #2980b9; }
+  .group-block.orange .group-stat-value { color: #e67e22; }
+  .group-block.purple .group-stat-value { color: #8e44ad; }
+  .group-stat-sub { font-size: 9px; color: #aab0b8; margin-top: 1px; }
+  .group-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #b0b8c1; padding: 10px 16px 6px; }
+
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: #f5f6fa; }
   ::-webkit-scrollbar-thumb { background: #dde1e7; border-radius: 2px; }
@@ -101,103 +206,237 @@
   <div class="header-left">
     <div class="header-icon">📊</div>
     <div>
-      <div class="header-title">Dashboard 2026</div>
+      <div class="header-title">Dashboard Intermittents</div>
       <div class="header-sub">Tableau de bord interactif · Cliquez sur une agence</div>
     </div>
   </div>
-  <div class="header-badge">🇫🇷 17 agences</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+
+    <!-- GROUP annual boxes (dynamic) -->
+    <div style="display:flex;align-items:center;gap:6px;padding-right:12px;border-right:1px solid #e8ecf0;">
+      <div id="group-label" style="font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-right:4px;white-space:nowrap;">Novelty France</div>
+      <div class="header-kpi-badge" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#fff);">
+        <div>
+          <div class="header-kpi-label">Intermt. annuels</div>
+          <div class="header-kpi-value" id="group-intermt" style="color:#2980b9;">—</div>
+        </div>
+      </div>
+      <div class="header-kpi-badge" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#fff);">
+        <div>
+          <div class="header-kpi-label">Bulletins annuels</div>
+          <div class="header-kpi-value" id="group-bullets" style="color:#2980b9;">—</div>
+        </div>
+      </div>
+      <div class="header-kpi-badge" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#fff);">
+        <div>
+          <div class="header-kpi-label">Masse ann.</div>
+          <div class="header-kpi-value" id="group-masse" style="color:#2980b9;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELECTED AGENCY annual boxes -->
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div id="agency-label" style="font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-right:4px;white-space:nowrap;">—</div>
+      <div class="header-kpi-badge" style="border-color:#d1f2de;background:linear-gradient(135deg,#f0fdf4,#fff);">
+        <div class="header-kpi-icon">👥</div>
+        <div>
+          <div class="header-kpi-label">Intermt. annuels</div>
+          <div class="header-kpi-value" id="header-intermt" style="color:#27ae60;">—</div>
+        </div>
+      </div>
+      <div class="header-kpi-badge" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#fff);">
+        <div class="header-kpi-icon">📄</div>
+        <div>
+          <div class="header-kpi-label">Bulletins annuels</div>
+          <div class="header-kpi-value" id="header-bullets" style="color:#2980b9;">—</div>
+        </div>
+      </div>
+      <div class="header-kpi-badge" style="border-color:#fed7aa;background:linear-gradient(135deg,#fff7ed,#fff);">
+        <div class="header-kpi-icon">💰</div>
+        <div>
+          <div class="header-kpi-label">Masse ann.</div>
+          <div class="header-kpi-value" id="header-masse-total" style="color:#e67e22;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-badge">🇫🇷 17 agences</div>
+  </div>
+</div>
+
+<div class="year-bar">
+  <span class="year-label">Année :</span>
+  <button class="year-btn" onclick="selectYear(2025)">2025</button>
+  <button class="year-btn active" onclick="selectYear(2026)">2026</button>
+
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <!-- Search -->
+    <div style="position:relative;">
+      <input id="search-input" type="text" placeholder="🔍 Rechercher une agence..." oninput="onSearch(this.value)"
+        style="padding:4px 10px 4px 10px;border-radius:20px;border:1px solid #3a4a5c;background:#243044;color:#e0e8f0;font-size:12px;font-family:'Segoe UI',sans-serif;width:200px;outline:none;">
+      <div id="search-results" style="display:none;position:absolute;top:30px;left:0;width:220px;background:#fff;border:1px solid #e0e4ea;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:9999;max-height:200px;overflow-y:auto;"></div>
+    </div>
+    <!-- View toggle -->
+    <button id="btn-carte" class="year-btn active" onclick="setView('carte')" style="padding:4px 14px;">🗺 Carte</button>
+    <button id="btn-tableau" class="year-btn" onclick="setView('tableau')" style="padding:4px 14px;">📋 Tableau</button>
+    <!-- Exports -->
+    <button onclick="exportExcel()" class="year-btn" style="padding:4px 14px;">⬇ Excel</button>
+    <button onclick="exportPDF()" class="year-btn" style="padding:4px 14px;">🖨 PDF</button>
+  </div>
 </div>
 
 <div class="month-bar">
   <span class="month-label">Mois :</span>
   <div id="month-buttons"></div>
+
 </div>
 
 <div class="main">
   <div id="map">
     <div class="legend">
-      <div class="legend-title">Groupes</div>
+      <div class="legend-title">Entreprises</div>
       <div class="legend-item"><div class="legend-dot" style="background:#2980b9"></div>Novelty</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>BBS</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>Lagoona</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>On Stage / Potar / De Préf / Lagoona</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>Planet / Music Live</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div>BBS · On Stage · Potar · De Préf · Lagoona</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>Planet Live · Music Live</div>
       <div class="legend-item"><div class="legend-dot" style="background:#ccc"></div>Aucune donnée ce mois</div>
     </div>
   </div>
 
   <div class="sidebar">
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Intermittents</div>
-        <div class="kpi-value kpi-green" id="kpi-intermt">—</div>
-        <div class="kpi-sub" id="kpi-intermt-sub">total</div>
+    <!-- KPI strip context title -->
+    <div id="kpi-strip-title" style="padding:8px 14px 4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#2980b9;background:#f8faff;border-bottom:1px solid #e8ecf0;">
+      Total Janvier · Novelty &amp; Filiales
+    </div>
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi-item">
+        <div class="kpi-item-label">Intermittents</div>
+        <div class="kpi-item-value kpi-green" id="kpi-intermt">—</div>
+        <div class="kpi-item-sub" id="kpi-intermt-sub">ce mois</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Bulletins</div>
-        <div class="kpi-value kpi-blue" id="kpi-bullets">—</div>
-        <div class="kpi-sub" id="kpi-bullets-sub">total</div>
+      <div class="kpi-item">
+        <div class="kpi-item-label">Bulletins</div>
+        <div class="kpi-item-value kpi-blue" id="kpi-bullets">—</div>
+        <div class="kpi-item-sub" id="kpi-bullets-sub">ce mois</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Masse Salariale</div>
-        <div class="kpi-value kpi-orange" id="kpi-masse">—</div>
-        <div class="kpi-sub">cumulé</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Bull. / Intermt.</div>
-        <div class="kpi-value kpi-pink" id="kpi-ratio">—</div>
-        <div class="kpi-sub">ratio moyen</div>
+      <div class="kpi-item">
+        <div class="kpi-item-label">Ratio</div>
+        <div class="kpi-item-value kpi-pink" id="kpi-ratio">—</div>
+        <div class="kpi-item-sub">bull./intermt.</div>
       </div>
     </div>
 
-    <div class="agency-panel">
-      <div class="panel-placeholder" id="placeholder">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c8d0d8" stroke-width="1.5">
+    <!-- Agency panel -->
+    <div class="agency-panel" style="padding:0;">
+
+      <div class="panel-placeholder" id="placeholder" style="height:180px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c8d0d8" stroke-width="1.5">
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
           <circle cx="12" cy="9" r="2.5"/>
         </svg>
-        <p>Cliquez sur une agence<br>pour afficher son détail</p>
+        <p style="font-size:12px;color:#aab0b8;line-height:1.6;">Cliquez sur une agence<br>pour afficher son détail</p>
       </div>
 
       <div class="agency-detail" id="agency-detail">
-        <div class="agency-header">
-          <div class="agency-dot" id="detail-dot"></div>
-          <div>
+
+        <!-- Agency header band -->
+        <div class="agency-header-band">
+          <div class="agency-title-row">
+            <div class="agency-color-bar" id="detail-colorbar"></div>
             <div class="agency-name" id="detail-name"></div>
-            <div class="agency-address">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#95a5a6" style="flex-shrink:0;margin-top:1px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
-              <span id="detail-address"></span>
+          </div>
+          <div class="agency-address">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="#95a5a6" style="flex-shrink:0;margin-top:1px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+            <span id="detail-address"></span>
+          </div>
+          <div id="no-data-msg" class="no-data-badge" style="display:none;margin-top:6px;">⚠ Aucune donnée ce mois</div>
+        </div>
+
+        <!-- 4 stat cards -->
+        <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="stat-card green">
+            <div class="stat-card-icon">👥</div>
+            <div class="stat-card-label">Intermittents</div>
+            <div class="stat-card-value" id="detail-intermt">—</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px;">
+              <div class="stat-card-sub" id="detail-intermt-sub">ce mois</div>
+              <div id="detail-intermt-evo" style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;"></div>
             </div>
           </div>
+          <div class="stat-card blue">
+            <div class="stat-card-icon">📄</div>
+            <div class="stat-card-label">Bulletins</div>
+            <div class="stat-card-value" id="detail-bullets">—</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px;">
+              <div class="stat-card-sub">ce mois</div>
+              <div id="detail-bullets-evo" style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;"></div>
+            </div>
+          </div>
+          <div class="stat-card orange" style="grid-column:1/-1;">
+            <div class="stat-card-icon">💶</div>
+            <div class="stat-card-label">Masse sal. mois</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="stat-card-value" id="detail-masse">—</div>
+              <div id="detail-masse-evo" style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;"></div>
+            </div>
+            <div class="stat-card-sub">ce mois</div>
+          </div>
+
+
+
         </div>
 
-        <div id="no-data-msg" class="no-data-badge" style="display:none">⚠ Aucune donnée ce mois</div>
 
-        <div class="detail-row green">
-          <div class="detail-label">Intermittents</div>
-          <div class="detail-value green" id="detail-intermt">—</div>
-        </div>
-        <div class="detail-row blue">
-          <div class="detail-label">Bulletins de paie</div>
-          <div class="detail-value blue" id="detail-bullets">—</div>
-        </div>
-        <div class="detail-row orange">
-          <div class="detail-label">Masse salariale</div>
-          <div class="detail-value orange" id="detail-masse">—</div>
-        </div>
-        <div class="detail-row purple">
-          <div class="detail-label">Coût moyen / bulletin</div>
-          <div class="detail-value purple" id="detail-ratio">—</div>
-        </div>
 
-        <div class="divider"></div>
-        <div class="month-trend">
-          <div class="trend-title">Bulletins — évolution annuelle</div>
-          <div class="trend-bars" id="trend-bars"></div>
-        </div>
       </div>
     </div>
+
+    <!-- Group summaries (dynamic) -->
+    <div class="group-section-title" id="group-section-title">Synthèse par groupe</div>
+    <div class="group-blocks" id="group-blocks-container"></div>
   </div>
+
+  <!-- TABLE VIEW — inside .main so it participates in flex layout -->
+  <div id="table-view">
+  <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div style="padding:14px 20px;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:14px;font-weight:800;color:#1a1a2e;" id="table-title">Tableau — Janvier 2026</div>
+      <div style="font-size:11px;color:#95a5a6;">Cliquez sur une ligne pour centrer sur la carte</div>
+    </div>
+    <table id="main-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#f8f9fb;">
+          <th style="padding:10px 14px;text-align:left;font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Agence</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#27ae60;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Intermt. mois</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#27ae60;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Δ vs mois préc.</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#2980b9;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Bulletins mois</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#2980b9;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Δ vs mois préc.</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#e67e22;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Masse sal.</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Intermt. annuel</th>
+          <th style="padding:10px 14px;text-align:right;font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid #e8ecf0;">Bulletins annuel</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+      <tfoot id="table-foot"></tfoot>
+    </table>
+  </div>
+
+  <!-- 2025 vs 2026 comparison chart -->
+  <div style="background:#fff;border-radius:12px;border:1px solid #e8ecf0;margin-top:16px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div style="font-size:13px;font-weight:800;color:#1a1a2e;margin-bottom:12px;">📊 Comparaison 2025 vs 2026 — Intermittents par mois (toutes agences)</div>
+    <div id="compare-chart" style="display:flex;align-items:flex-end;gap:6px;height:200px;padding-bottom:4px;"></div>
+    <div style="display:flex;gap:14px;margin-top:6px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#7f8c8d;"><div style="width:10px;height:10px;border-radius:2px;background:#bfdbfe;"></div>2025</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#7f8c8d;"><div style="width:10px;height:10px;border-radius:2px;background:#2980b9;"></div>2026</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- PRINT REPORT -->
+<div id="print-report"></div>
+
 </div>
 
 <script>
@@ -207,27 +446,63 @@
 const MONTHS = ['Janv','Fév','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
 
 /* ==BEGIN_DATA== */
-const agencies = [
-  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[230, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[660, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2399, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[22, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[29, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[141, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-];
+const agenciesData = {
+  2025: [
+  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[4, 2, 4, 4, 13, 14, 10, 9, 13, 9, 3, 3], bullets:[4, 2, 4, 4, 20, 14, 10, 9, 13, 9, 0, 0], masse:[1410, 963, 2110, 2782, 8058, 11730, 13074, 12043, 10180, 5952, 1256, 1850], masse_total:71408 },
+  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[0, 1, 1, 1, 1, 2, 3, 2, 2, 2, 0, 3], bullets:[0, 1, 1, 18, 1, 2, 3, 2, 2, 2, 0, 0], masse:[0, 750, 150, 150, 1225, 3940, 3100, 1845, 1970, 1460, 0, 530], masse_total:15120 },
+  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[4, 17, 4, 13, 6, 12, 11, 5, 18, 22, 12, 10], bullets:[4, 17, 4, 13, 20, 12, 12, 5, 18, 23, 12, 0], masse:[1890, 9926, 2661, 11105, 3638, 24645, 12986, 844, 17000, 21085, 11328, 8856], masse_total:125964 },
+  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[52, 37, 70, 9, 23, 67, 50, 7, 83, 79, 4, 14], bullets:[59, 37, 77, 9, 24, 78, 58, 8, 95, 87, 4, 0], masse:[69126, 24765, 129009, 9765, 51080, 142852, 66996, 2870, 116893, 110204, 4807, 18180], masse_total:746547 },
+  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[175, 81, 136, 101, 77, 206, 146, 121, 282, 116, 148, 103], bullets:[179, 81, 137, 101, 78, 207, 148, 122, 284, 119, 0, 0], masse:[146093, 59708, 94677, 69994, 68809, 136850, 110142, 45658, 229740, 84406, 115394, 67999], masse_total:1229470 },
+  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[42, 38, 87, 103, 229, 179, 88, 39, 103, 76, 65, 49], bullets:[42, 39, 90, 104, 237, 183, 88, 39, 103, 77, 0, 0], masse:[24602, 17605, 106928, 95874, 407072, 182283, 120347, 34441, 78343, 46348, 46235, 39313], masse_total:1199390 },
+  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[76, 14, 35, 15, 22, 83, 125, 40, 64, 50, 34, 48], bullets:[77, 14, 35, 14, 22, 83, 125, 40, 64, 50, 0, 0], masse:[97540, 8407, 20670, 11972, 9804, 95669, 175643, 22333, 43153, 59864, 28584, 41329], masse_total:614968 },
+  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[27, 37, 31, 32, 119, 133, 69, 27, 72, 53, 40, 58], bullets:[28, 37, 31, 35, 120, 136, 70, 27, 75, 55, 0, 0], masse:[12649, 28083, 22233, 18995, 119443, 114743, 46517, 14522, 77154, 50198, 22933, 45580], masse_total:573050 },
+  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[101, 99, 100, 104, 156, 192, 157, 82, 205, 169, 107, 100], bullets:[102, 100, 101, 106, 158, 198, 157, 83, 211, 174, 0, 0], masse:[50089, 65409, 74390, 75309, 162575, 309967, 162062, 54538, 216149, 143270, 61178, 63190], masse_total:1438125 },
+  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[73, 32, 67, 99, 51, 74, 54, 56, 51, 55, 77, 53], bullets:[75, 32, 69, 100, 52, 76, 54, 56, 52, 57, 0, 0], masse:[70875, 27920, 64743, 79570, 41361, 88683, 54056, 28542, 37231, 47442, 81384, 39420], masse_total:661227 },
+  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[625, 431, 686, 425, 442, 698, 523, 189, 800, 821, 514, 393], bullets:[641, 434, 713, 437, 452, 720, 532, 189, 817, 840, 0, 0], masse:[1095552, 533227, 1265413, 549274, 716159, 1327652, 731986, 218592, 1257320, 1283990, 675893, 463304], masse_total:10118365 },
+  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[10, 8, 6, 12, 35, 68, 80, 49, 37, 23, 18, 24], bullets:[10, 8, 6, 12, 35, 68, 80, 51, 37, 23, 0, 0], masse:[9200, 3320, 8399, 7626, 43344, 148045, 156823, 68071, 39108, 15408, 14223, 34482], masse_total:548048 },
+  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[40, 52, 58, 56, 63, 74, 51, 21, 54, 46, 58, 51], bullets:[41, 53, 58, 57, 64, 75, 52, 21, 55, 47, 0, 0], masse:[56742, 55606, 54711, 56406, 52678, 64039, 50385, 24185, 49692, 41815, 50582, 46013], masse_total:602854 },
+  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
+  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
+  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
+  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
+],
+  2026: [
+  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[330, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:330 },
+  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[530, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:530 },
+  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[6555, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:6555 },
+  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[127348, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:127348 },
+  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 138, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[183410, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:183410 },
+  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[40198, 22300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:62498 },
+  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[37578, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:37578 },
+  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[24473, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:24473 },
+  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[48422, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:48422 },
+  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[61, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[230, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[59713, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:59713 },
+  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[660, 476, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2399, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[1176671, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:1176671 },
+  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[18, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[25435, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:25435 },
+  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[57, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[93, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[41965, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:41965 },
+  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[22, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[29, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[15285, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:15285 },
+  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[5365, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:5365 },
+  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[9563, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:9563 },
+  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[141, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[74593, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:74593 },
+]
+};
 
-const monthHasData = [
+const monthHasDataByYear = {
+  2025: [
+  true,  // Janv
+  true,  // Fév
+  true,  // Mars
+  true,  // Avril
+  true,  // Mai
+  true,  // Juin
+  true,  // Juil
+  true,  // Août
+  true,  // Sept
+  true,  // Oct
+  true,  // Nov
+  true,  // Déc
+],
+  2026: [
   true,  // Janv
   true,  // Fév
   false,  // Mars
@@ -240,21 +515,61 @@ const monthHasData = [
   false,  // Oct
   false,  // Nov
   false,  // Déc
-];
+]
+};
+
+// Active year/data (set by selectYear)
+let agencies = agenciesData[2026];
+let monthHasData = monthHasDataByYear[2026];
 /* ==END_DATA== */
 
 // ============================================================
 // STATE
 // ============================================================
+let currentYear = 2026;
 let currentMonth = 0;
 let selectedAgency = null;
 let markers = {};
+
+function selectYear(year) {
+  currentYear = year;
+  agencies = agenciesData[year];
+  monthHasData = monthHasDataByYear[year];
+
+  // Update year buttons
+  document.querySelectorAll('.year-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.textContent) === year);
+  });
+
+  // Rebuild month buttons
+  const container = document.getElementById('month-buttons');
+  container.innerHTML = '';
+  const months = ['Janv','Fév','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  months.forEach((m, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = m;
+    btn.className = 'month-btn' + (i === currentMonth ? ' active' : '') + (!monthHasData[i] ? ' no-data' : '');
+    btn.onclick = () => selectMonth(i);
+    container.appendChild(btn);
+  });
+
+  // Refresh markers seulement en vue carte
+  if (currentView === 'carte') {
+    agencies.forEach(a => {
+      markers[a.id].setIcon(markerIcon(a, currentMonth, a.id === selectedAgency));
+      markers[a.id].setPopupContent(buildPopup(a, currentMonth));
+    });
+    if (selectedAgency) selectAgency(selectedAgency);
+  }
+  updateKPIs();
+  if (currentView === 'tableau') renderTable();
+}
 
 // ============================================================
 // MAP
 // ============================================================
 const map = L.map('map', { center: [46.8, 2.3], zoom: 6, zoomControl: true, attributionControl: false });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   maxZoom: 20,
   attribution: '© OpenStreetMap · © CartoDB'
 }).addTo(map);
@@ -265,9 +580,10 @@ L.control.attribution({ prefix: false }).addTo(map);
 // ============================================================
 function markerIcon(agency, month, selected) {
   const b = agency.bullets[month];
-  const hasData = b > 0 || agency.intermt[month] > 0;
+  const iv = agency.intermt[month];
+  const hasData = b > 0 || iv > 0;
   const color = hasData ? agency.color : '#ccc';
-  const label = b > 9999 ? Math.round(b/1000)+'k' : (b > 0 ? b : '·');
+  const label = iv > 9999 ? Math.round(iv/1000)+'k' : (iv > 0 ? iv : '·');
   const size = selected ? 42 : 36;
   const shadow = selected
     ? `0 0 0 4px ${agency.color}44, 0 4px 14px rgba(0,0,0,0.22)`
@@ -314,23 +630,43 @@ function selectAgency(id) {
   const i = agency.intermt[currentMonth];
   const b = agency.bullets[currentMonth];
   const m = agency.masse[currentMonth];
+  const mt = agency.masse_total || 0;
   const hasData = i > 0 || b > 0;
 
-  document.getElementById('detail-dot').style.background = agency.color;
+  document.getElementById('detail-colorbar').style.background = agency.color;
   document.getElementById('detail-name').textContent = agency.name;
   document.getElementById('detail-address').textContent = agency.address;
   document.getElementById('no-data-msg').style.display = hasData ? 'none' : 'inline-block';
   document.getElementById('detail-intermt').textContent = i || '—';
   document.getElementById('detail-bullets').textContent = b || '—';
-  document.getElementById('detail-masse').textContent = m > 0 ? m.toLocaleString('fr-FR') + ' €' : 'À saisir';
-  document.getElementById('detail-ratio').textContent = (m > 0 && b > 0) ? Math.round(m/b).toLocaleString('fr-FR') + ' €' : '—';
+  document.getElementById('detail-masse').textContent = m > 0 ? m.toLocaleString('fr-FR') + ' €' : '—';
 
+  // Evolution vs previous month
+  const ip = currentMonth > 0 ? (agency.intermt[currentMonth-1]||0) : 0;
+  const bp = currentMonth > 0 ? (agency.bullets[currentMonth-1]||0) : 0;
+  const mp = currentMonth > 0 ? (agency.masse[currentMonth-1]||0) : 0;
+  evoTag(i, ip, 'detail-intermt-evo');
+  evoTag(b, bp, 'detail-bullets-evo');
+  evoTag(m, mp, 'detail-masse-evo');
+
+  // Update header and groups based on new selection
+  updateKPIs();
+
+  // Dual bar chart: intermittents + bulletins per month
+  const maxI = Math.max(...agency.intermt, 1);
   const maxB = Math.max(...agency.bullets, 1);
-  document.getElementById('trend-bars').innerHTML = agency.bullets.map((bv, idx) => `
-    <div class="trend-bar-wrap">
-      <div class="trend-bar ${idx===currentMonth?'active-bar':''}" style="height:${Math.max(2,Math.round((bv/maxB)*46))}px" title="${MONTHS[idx]}: ${bv}"></div>
-      <div class="trend-month">${MONTHS[idx][0]}</div>
-    </div>`).join('');
+  document.getElementById('trend-bars').innerHTML = MONTHS.map((mn, idx) => {
+    const iv = agency.intermt[idx] || 0;
+    const bv = agency.bullets[idx] || 0;
+    const isActive = idx === currentMonth;
+    return `<div class="chart-bar-wrap">
+      <div style="display:flex;align-items:flex-end;gap:1px;height:50px;">
+        <div style="width:48%;border-radius:2px 2px 0 0;min-height:2px;height:${Math.max(2,Math.round((iv/maxI)*48))}px;background:${isActive?'#27ae60':'#d1f2de'};transition:height 0.3s;" title="${mn}: ${iv} intermt."></div>
+        <div style="width:48%;border-radius:2px 2px 0 0;min-height:2px;height:${Math.max(2,Math.round((bv/maxB)*48))}px;background:${isActive?'#2980b9':'#bfdbfe'};transition:height 0.3s;" title="${mn}: ${bv} bulletins"></div>
+      </div>
+      <div class="chart-month">${mn[0]}</div>
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
@@ -339,43 +675,563 @@ function selectAgency(id) {
 function selectMonth(idx) {
   currentMonth = idx;
   document.querySelectorAll('.month-btn').forEach((btn, i) => btn.classList.toggle('active', i===idx));
-  agencies.forEach(a => {
-    markers[a.id].setIcon(markerIcon(a, idx, a.id===selectedAgency));
-    markers[a.id].setPopupContent(buildPopup(a, idx));
-  });
-  updateKPIs();
-  if (selectedAgency) selectAgency(selectedAgency);
+  if (currentView === 'carte') {
+    agencies.forEach(a => {
+      markers[a.id].setIcon(markerIcon(a, idx, a.id===selectedAgency));
+      markers[a.id].setPopupContent(buildPopup(a, idx));
+    });
+    updateKPIs();
+    if (selectedAgency) selectAgency(selectedAgency);
+  } else {
+    updateKPIs();
+    renderTable();
+  }
 }
+
+// ============================================================
+// GROUPES CONFIG
+// ============================================================
+const GROUPS = {
+  novelty: {
+    ids: ['novelty_paris','novelty_aura','novelty_azur','novelty_go','novelty_normandie','novelty_bordeaux','novelty_toulouse'],
+    label: 'Novelty France', color: '#2980b9', cls: 'blue', emoji: '🔵'
+  },
+  bbs: {
+    ids: ['bbs_paris','bbs_marseille','bbs_mougins'],
+    label: 'BBS', color: '#e67e22', cls: 'orange', emoji: '🟠'
+  },
+  lagoona: {
+    ids: ['lagoona_belfort','lagoona_mun'],
+    label: 'Lagoona', color: '#e67e22', cls: 'orange', emoji: '🟠'
+  },
+  other: {
+    ids: ['depref','onstage','potar','planet_live','music_live'],
+    label: 'Autres filiales', color: '#e67e22', cls: 'orange', emoji: '🟠'
+  }
+};
+
+function getAgencyGroup(id) {
+  for (const [key, g] of Object.entries(GROUPS)) {
+    if (g.ids.includes(id)) return key;
+  }
+  return null;
+}
+
+function groupAnnualSum(ids) {
+  const list = agencies.filter(a => ids.includes(a.id));
+  return {
+    i: list.reduce((s,a)=>s+a.intermt.reduce((x,v)=>x+v,0),0),
+    b: list.reduce((s,a)=>s+a.bullets.reduce((x,v)=>x+v,0),0),
+    m: list.reduce((s,a)=>s+a.masse.reduce((x,v)=>x+v,0),0),
+  };
+}
+
+function groupMonthSum(ids, month) {
+  const list = agencies.filter(a => ids.includes(a.id));
+  return {
+    i: list.reduce((s,a)=>s+(a.intermt[month]||0),0),
+    b: list.reduce((s,a)=>s+(a.bullets[month]||0),0),
+    m: list.reduce((s,a)=>s+(a.masse[month]||0),0),
+  };
+}
+
+function fmtN(v) { return v > 0 ? v.toLocaleString('fr-FR') : '—'; }
+function fmtE(v) { return v > 0 ? v.toLocaleString('fr-FR') + ' €' : '—'; }
 
 // ============================================================
 // KPIs
 // ============================================================
 function updateKPIs() {
+  const noveltyIds = GROUPS.novelty.ids;
+
+  // KPI strip (top of sidebar): totals of all agencies this month
   const totalI = agencies.reduce((s,a) => s+(a.intermt[currentMonth]||0), 0);
   const totalB = agencies.reduce((s,a) => s+(a.bullets[currentMonth]||0), 0);
-  const totalM = agencies.reduce((s,a) => s+(a.masse[currentMonth]||0), 0);
-  document.getElementById('kpi-intermt').textContent = totalI.toLocaleString('fr-FR')||'—';
-  document.getElementById('kpi-bullets').textContent = totalB.toLocaleString('fr-FR')||'—';
-  document.getElementById('kpi-masse').textContent   = totalM>0 ? totalM.toLocaleString('fr-FR')+' €' : 'À saisir';
+  document.getElementById('kpi-intermt').textContent = fmtN(totalI);
+  document.getElementById('kpi-bullets').textContent = fmtN(totalB);
   document.getElementById('kpi-ratio').textContent   = totalI>0 ? (totalB/totalI).toFixed(1) : '—';
   document.getElementById('kpi-intermt-sub').textContent = MONTHS[currentMonth];
   document.getElementById('kpi-bullets-sub').textContent = MONTHS[currentMonth];
+
+  // KPI strip title
+  document.getElementById('kpi-strip-title').textContent =
+    'Total ' + MONTHS[currentMonth] + ' · Novelty & Filiales';
+
+  // Header GROUP boxes: Novelty France annual by default, or group of selected agency
+  let groupKey = 'novelty';
+  let groupLabel = 'Novelty France';
+  if (selectedAgency) {
+    const gk = getAgencyGroup(selectedAgency);
+    if (gk) { groupKey = gk; groupLabel = GROUPS[gk].label; }
+  }
+  const gAnn = groupAnnualSum(GROUPS[groupKey].ids);
+  document.getElementById('group-label').textContent = groupLabel + ' · Annuel';
+  document.getElementById('group-intermt').textContent = fmtN(gAnn.i);
+  document.getElementById('group-bullets').textContent = fmtN(gAnn.b);
+  document.getElementById('group-masse').textContent   = fmtE(gAnn.m);
+
+  // Header AGENCY boxes: selected agency annual, or all Novelty annual if nothing selected
+  if (selectedAgency) {
+    const ag = agencies.find(a=>a.id===selectedAgency);
+    const agI = ag.intermt.reduce((s,v)=>s+v,0);
+    const agB = ag.bullets.reduce((s,v)=>s+v,0);
+    const agM = ag.masse.reduce((s,v)=>s+v,0);
+    document.getElementById('agency-label').textContent = ag.name + ' · Annuel';
+    document.getElementById('header-intermt').textContent = fmtN(agI);
+    document.getElementById('header-bullets').textContent = fmtN(agB);
+    document.getElementById('header-masse-total').textContent = fmtE(agM);
+  } else {
+    document.getElementById('agency-label').textContent = '—';
+    document.getElementById('header-intermt').textContent = '—';
+    document.getElementById('header-bullets').textContent = '—';
+    document.getElementById('header-masse-total').textContent = '—';
+  }
+
+  // Dynamic group blocks
+  renderGroupBlocks();
 }
 
-// Génération des boutons de mois
-(function() {
-  const months = ['Janv','Fév','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
-  const container = document.getElementById('month-buttons');
-  months.forEach((m, i) => {
-    const btn = document.createElement('button');
-    btn.textContent = m;
-    btn.className = 'month-btn' + (i === 0 ? ' active' : '') + (!monthHasData[i] ? ' no-data' : '');
-    btn.onclick = () => selectMonth(i);
-    container.appendChild(btn);
-  });
-})();
+// ============================================================
+// DYNAMIC GROUP BLOCKS
+// ============================================================
 
-updateKPIs();
+function detailTable(ids, cls, selectedId) {
+  const borderColor = cls === 'blue' ? '#bfdbfe' : '#fed7aa';
+  const nameColor   = cls === 'blue' ? '#2980b9'  : '#e67e22';
+  const header = `<div style="display:grid;grid-template-columns:1fr 46px 46px 78px;gap:4px;padding:4px 6px 6px;border-bottom:1px solid ${borderColor};margin-bottom:4px;">
+    <div style="font-size:9px;color:#95a5a6;font-weight:700;text-transform:uppercase;">Agence</div>
+    <div style="font-size:9px;color:#95a5a6;font-weight:700;text-transform:uppercase;text-align:right;">Intermt.</div>
+    <div style="font-size:9px;color:#95a5a6;font-weight:700;text-transform:uppercase;text-align:right;">Bull.</div>
+    <div style="font-size:9px;color:#95a5a6;font-weight:700;text-transform:uppercase;text-align:right;">Masse</div>
+  </div>`;
+  const rows = ids.map(id => {
+    const a = agencies.find(x => x.id === id);
+    const i = a.intermt[currentMonth]||0, b = a.bullets[currentMonth]||0, m = a.masse[currentMonth]||0;
+    const sel = id === selectedId;
+    const bg = sel ? (cls==='blue' ? 'background:#dbeafe;' : 'background:#ffedd5;') : '';
+    const fw = sel ? '800' : '600';
+    const shortName = a.name.replace('Novelty ','').replace('BBS ','').replace('Lagoona ','');
+    return `<div style="display:grid;grid-template-columns:1fr 46px 46px 78px;align-items:center;gap:4px;padding:4px 6px;border-radius:6px;${bg}">
+      <div style="font-size:11px;color:${nameColor};font-weight:${fw};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${a.name}">${shortName}</div>
+      <div style="font-size:12px;font-weight:700;color:#27ae60;text-align:right;">${fmtN(i)}</div>
+      <div style="font-size:12px;font-weight:700;color:#2980b9;text-align:right;">${fmtN(b)}</div>
+      <div style="font-size:11px;font-weight:700;color:#e67e22;text-align:right;">${fmtE(m)}</div>
+    </div>`;
+  }).join('');
+  return header + rows;
+}
+
+function groupBlock(cls, title, g, detailHtml) {
+  const borderColor = cls === 'blue' ? '#bfdbfe' : '#fed7aa';
+  const stats = `<div class="group-stats" style="margin-bottom:${detailHtml?'8px':'0'};">
+    <div class="group-stat"><div class="group-stat-label">Total Intermt.</div><div class="group-stat-value">${fmtN(g.i)}</div></div>
+    <div class="group-stat"><div class="group-stat-label">Total Bulletins</div><div class="group-stat-value">${fmtN(g.b)}</div></div>
+    <div class="group-stat"><div class="group-stat-label">Total Masse</div><div class="group-stat-value" style="font-size:13px;">${fmtE(g.m)}</div></div>
+  </div>`;
+  const detail = detailHtml
+    ? `<div style="border-top:1px solid ${borderColor};padding-top:6px;margin-top:2px;">${detailHtml}</div>` : '';
+  return `<div class="group-block ${cls}"><div class="group-block-title">${title}</div>${stats}${detail}</div>`;
+}
+
+function singleBlock(agency) {
+  const i = agency.intermt[currentMonth]||0, b = agency.bullets[currentMonth]||0, m = agency.masse[currentMonth]||0;
+  return `<div class="group-block orange">
+    <div class="group-block-title" style="color:#e67e22;">🟠 ${agency.name}</div>
+    <div class="group-stats">
+      <div class="group-stat"><div class="group-stat-label">Intermt.</div><div class="group-stat-value" style="color:#e67e22;">${fmtN(i)}</div></div>
+      <div class="group-stat"><div class="group-stat-label">Bulletins</div><div class="group-stat-value" style="color:#e67e22;">${fmtN(b)}</div></div>
+      <div class="group-stat"><div class="group-stat-label">Masse sal.</div><div class="group-stat-value" style="font-size:13px;color:#e67e22;">${fmtE(m)}</div></div>
+    </div>
+  </div>`;
+}
+
+function renderGroupBlocks() {
+  const container = document.getElementById('group-blocks-container');
+  const mn = MONTHS[currentMonth];
+  const grp = selectedAgency ? getAgencyGroup(selectedAgency) : null;
+
+  if (grp === 'novelty') {
+    const g = groupMonthSum(GROUPS.novelty.ids, currentMonth);
+    container.innerHTML = groupBlock('blue', '🔵 Novelty France · ' + mn, g,
+      detailTable(GROUPS.novelty.ids, 'blue', selectedAgency));
+
+  } else if (grp === 'bbs') {
+    const g = groupMonthSum(GROUPS.bbs.ids, currentMonth);
+    container.innerHTML = groupBlock('orange', '🟠 BBS · ' + mn, g,
+      detailTable(GROUPS.bbs.ids, 'orange', selectedAgency));
+
+  } else if (grp === 'lagoona') {
+    const g = groupMonthSum(GROUPS.lagoona.ids, currentMonth);
+    container.innerHTML = groupBlock('orange', '🟠 Lagoona · ' + mn, g,
+      detailTable(GROUPS.lagoona.ids, 'orange', selectedAgency));
+
+  } else if (grp === 'other') {
+    const agency = agencies.find(a => a.id === selectedAgency);
+    container.innerHTML = singleBlock(agency);
+
+  } else {
+    // Nothing selected → default view
+    const gN = groupMonthSum(GROUPS.novelty.ids, currentMonth);
+    const gO = groupMonthSum([...GROUPS.bbs.ids,...GROUPS.lagoona.ids,...GROUPS.other.ids], currentMonth);
+    container.innerHTML =
+      groupBlock('blue',   '🔵 Novelty France · ' + mn, gN, null) +
+      groupBlock('orange', '🟠 BBS · Lagoona · Filiales · ' + mn, gO, null);
+  }
+}
+
+
+// ============================================================
+// EVOLUTION % HELPER
+// ============================================================
+function evoTag(cur, prev, elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (prev === 0 || cur === 0) { el.textContent = ''; el.style.background = ''; return; }
+  const pct = Math.round(((cur - prev) / prev) * 100);
+  if (pct > 0) { el.textContent = '▲ +'+pct+'%'; el.style.background='#d1fae5'; el.style.color='#065f46'; }
+  else if (pct < 0) { el.textContent = '▼ '+pct+'%'; el.style.background='#fee2e2'; el.style.color='#991b1b'; }
+  else { el.textContent = '= 0%'; el.style.background='#f3f4f6'; el.style.color='#6b7280'; }
+}
+
+// ============================================================
+// MINI COMPARISON CHART (2025 vs 2026) for agency detail
+// ============================================================
+function renderDetailCompare(agency) {
+  const el = document.getElementById('detail-compare-chart');
+  if (!el) return;
+  const ag25 = agenciesData[2025].find(a => a.id === agency.id);
+  const ag26 = agenciesData[2026].find(a => a.id === agency.id);
+  const max = Math.max(...(ag25 ? ag25.intermt : []), ...(ag26 ? ag26.intermt : []), 1);
+  el.innerHTML = MONTHS.map((m, i) => {
+    const v25 = ag25 ? ag25.intermt[i] : 0;
+    const v26 = ag26 ? ag26.intermt[i] : 0;
+    const isActive = i === currentMonth;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">
+      <div style="width:100%;display:flex;align-items:flex-end;gap:1px;height:40px;">
+        <div style="width:48%;border-radius:2px 2px 0 0;min-height:1px;height:${Math.max(1,Math.round((v25/max)*38))}px;background:${isActive?'#93c5fd':'#bfdbfe'};"></div>
+        <div style="width:48%;border-radius:2px 2px 0 0;min-height:1px;height:${Math.max(1,Math.round((v26/max)*38))}px;background:${isActive?'#2980b9':'#93c5fd'};"></div>
+      </div>
+      <div style="font-size:7px;color:#c0c8d0;font-weight:600;">${m[0]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// TABLE VIEW
+// ============================================================
+let currentView = 'carte';
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('btn-carte').classList.toggle('active', view === 'carte');
+  document.getElementById('btn-tableau').classList.toggle('active', view === 'tableau');
+  const inTable = view === 'tableau';
+  document.getElementById('map').style.display         = inTable ? 'none' : 'flex';
+  document.querySelector('.sidebar').style.display     = inTable ? 'none' : 'flex';
+  document.getElementById('table-view').style.display  = inTable ? 'flex'  : 'none';
+  document.getElementById('table-view').style.flexDirection = 'column';
+  if (inTable) renderTable();
+}
+
+function renderTable() {
+  const mn = MONTHS[currentMonth];
+  document.getElementById('table-title').textContent = `Tableau — ${mn} ${currentYear}`;
+  const tbody = document.getElementById('table-body');
+  const tfoot = document.getElementById('table-foot');
+  let totI=0, totB=0, totM=0, totAI=0, totAB=0;
+
+  tbody.innerHTML = agencies.map(a => {
+    const i  = a.intermt[currentMonth]||0;
+    const b  = a.bullets[currentMonth]||0;
+    const m  = a.masse[currentMonth]||0;
+    const ip = currentMonth > 0 ? (a.intermt[currentMonth-1]||0) : 0;
+    const bp = currentMonth > 0 ? (a.bullets[currentMonth-1]||0) : 0;
+    const ai = a.intermt.reduce((s,v)=>s+v,0);
+    const ab = a.bullets.reduce((s,v)=>s+v,0);
+    totI+=i; totB+=b; totM+=m; totAI+=ai; totAB+=ab;
+    const diI = ip ? Math.round(((i-ip)/ip)*100) : null;
+    const diB = bp ? Math.round(((b-bp)/bp)*100) : null;
+    const eI = diI===null ? '—' : diI>0 ? `<span style="color:#27ae60;font-weight:700;">▲ +${diI}%</span>` : diI<0 ? `<span style="color:#e74c3c;font-weight:700;">▼ ${diI}%</span>` : '<span style="color:#95a5a6;">= 0%</span>';
+    const eB = diB===null ? '—' : diB>0 ? `<span style="color:#27ae60;font-weight:700;">▲ +${diB}%</span>` : diB<0 ? `<span style="color:#e74c3c;font-weight:700;">▼ ${diB}%</span>` : '<span style="color:#95a5a6;">= 0%</span>';
+    return `<tr onclick="selectAgency('${a.id}');setView('carte');" style="cursor:pointer;border-bottom:1px solid #f0f2f5;" onmouseover="this.style.background='#f8f9fb'" onmouseout="this.style.background=''">
+      <td style="padding:9px 14px;font-weight:600;color:#1a1a2e;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${a.color};margin-right:7px;"></span>${a.name}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;color:#27ae60;">${i||'—'}</td>
+      <td style="padding:9px 14px;text-align:right;">${eI}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;color:#2980b9;">${b||'—'}</td>
+      <td style="padding:9px 14px;text-align:right;">${eB}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;color:#e67e22;">${m>0?m.toLocaleString('fr-FR')+' €':'—'}</td>
+      <td style="padding:9px 14px;text-align:right;color:#7f8c8d;">${ai||'—'}</td>
+      <td style="padding:9px 14px;text-align:right;color:#7f8c8d;">${ab||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  tfoot.innerHTML = `<tr style="background:#f0fdf4;border-top:2px solid #2ecc71;">
+    <td style="padding:10px 14px;font-weight:800;color:#27ae60;font-size:12px;">TOTAL</td>
+    <td style="padding:10px 14px;text-align:right;font-weight:900;color:#27ae60;">${totI.toLocaleString('fr-FR')}</td>
+    <td></td>
+    <td style="padding:10px 14px;text-align:right;font-weight:900;color:#2980b9;">${totB.toLocaleString('fr-FR')}</td>
+    <td></td>
+    <td style="padding:10px 14px;text-align:right;font-weight:900;color:#e67e22;">${totM>0?totM.toLocaleString('fr-FR')+' €':'—'}</td>
+    <td style="padding:10px 14px;text-align:right;font-weight:800;color:#7f8c8d;">${totAI.toLocaleString('fr-FR')}</td>
+    <td style="padding:10px 14px;text-align:right;font-weight:800;color:#7f8c8d;">${totAB.toLocaleString('fr-FR')}</td>
+  </tr>`;
+
+  renderCompareChart();
+}
+
+function renderCompareChart() {
+  const el = document.getElementById('compare-chart');
+  if (!el) return;
+  const d25 = agenciesData[2025], d26 = agenciesData[2026];
+  const vals25 = MONTHS.map((_,i) => d25.reduce((s,a)=>s+(a.intermt[i]||0),0));
+  const vals26 = MONTHS.map((_,i) => d26.reduce((s,a)=>s+(a.intermt[i]||0),0));
+  const maxV = Math.max(...vals25, ...vals26, 1);
+  el.innerHTML = MONTHS.map((m,i) => {
+    const v25=vals25[i], v26=vals26[i];
+    const isActive = i===currentMonth;
+    const h25 = Math.max(1,Math.round((v25/maxV)*78));
+    const h26 = Math.max(1,Math.round((v26/maxV)*78));
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;">
+      <div style="width:100%;display:flex;align-items:flex-end;gap:1px;height:88px;position:relative;">
+        <div style="width:48%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+          ${v25>0?`<div style="font-size:7px;font-weight:700;color:#2980b9;margin-bottom:1px;">${v25}</div>`:''}
+          <div style="width:100%;border-radius:2px 2px 0 0;height:${h25}px;background:${isActive?'#93c5fd':'#bfdbfe'};transition:height 0.3s;" title="2025 ${m}: ${v25}"></div>
+        </div>
+        <div style="width:48%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+          ${v26>0?`<div style="font-size:7px;font-weight:700;color:#1a5f9a;margin-bottom:1px;">${v26}</div>`:''}
+          <div style="width:100%;border-radius:2px 2px 0 0;height:${h26}px;background:${isActive?'#1a6fad':'#2980b9'};transition:height 0.3s;" title="2026 ${m}: ${v26}"></div>
+        </div>
+      </div>
+      <div style="font-size:8px;color:#b0b8c1;font-weight:600;margin-top:3px;white-space:nowrap;">${m}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+function onSearch(q) {
+  const box = document.getElementById('search-results');
+  if (!q.trim()) { box.style.display='none'; return; }
+  const hits = agencies.filter(a => a.name.toLowerCase().includes(q.toLowerCase()));
+  if (!hits.length) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = hits.map(a =>
+    `<div onclick="searchSelect('${a.id}')" style="padding:8px 12px;cursor:pointer;font-size:12px;color:#2c3e50;border-bottom:1px solid #f0f2f5;"
+      onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${a.color};margin-right:6px;"></span>${a.name}
+    </div>`
+  ).join('');
+}
+
+function searchSelect(id) {
+  document.getElementById('search-results').style.display='none';
+  document.getElementById('search-input').value='';
+  if (currentView !== 'carte') setView('carte');
+  const agency = agencies.find(a=>a.id===id);
+  map.setView([agency.lat, agency.lng], 10);
+  markers[id].openPopup();
+  selectAgency(id);
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#search-input') && !e.target.closest('#search-results'))
+    document.getElementById('search-results').style.display='none';
+});
+
+// ============================================================
+// EXPORT EXCEL
+// ============================================================
+function exportExcel() {
+  const mn = MONTHS[currentMonth];
+  const wb = XLSX.utils.book_new();
+
+  // ── Onglet 1 : Synthèse du mois ──
+  const rows1 = [['Agence','Groupe','Intermt. '+mn,'Δ% vs préc.','Bulletins '+mn,'Δ% vs préc.','Masse sal. '+mn,'Coût moy./bulletin','Intermt. cumulé','Bulletins cumulés','Masse cumulée']];
+  let totI=0,totB=0,totM=0;
+  agencies.forEach(a => {
+    const grp = getAgencyGroup(a.id);
+    const grpLabel = grp==='novelty'?'Novelty':grp==='bbs'?'BBS':grp==='lagoona'?'Lagoona':'Filiale';
+    const i=a.intermt[currentMonth]||0, b=a.bullets[currentMonth]||0, m=a.masse[currentMonth]||0;
+    const ip=currentMonth>0?(a.intermt[currentMonth-1]||0):0;
+    const bp=currentMonth>0?(a.bullets[currentMonth-1]||0):0;
+    const diI = ip ? ((i-ip)/ip*100).toFixed(1)+'%' : '—';
+    const diB = bp ? ((b-bp)/bp*100).toFixed(1)+'%' : '—';
+    const cout = (m>0 && b>0) ? Math.round(m/b) : 0;
+    const ai=a.intermt.reduce((s,v)=>s+v,0), ab=a.bullets.reduce((s,v)=>s+v,0), am=a.masse.reduce((s,v)=>s+v,0);
+    totI+=i; totB+=b; totM+=m;
+    rows1.push([a.name, grpLabel, i, diI, b, diB, m, cout||'—', ai, ab, am]);
+  });
+  rows1.push(['TOTAL','',totI,'',totB,'',totM,'','','','']);
+  const ws1 = XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols'] = [{wch:22},{wch:10},{wch:13},{wch:12},{wch:13},{wch:12},{wch:14},{wch:18},{wch:14},{wch:15},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Synthèse '+mn+' '+currentYear);
+
+  // ── Onglet 2 : Détail annuel intermittents ──
+  const rows2 = [['Agence','Groupe',...MONTHS,'TOTAL']];
+  const totRow2 = new Array(12).fill(0);
+  agencies.forEach(a => {
+    const grp = getAgencyGroup(a.id);
+    const grpLabel = grp==='novelty'?'Novelty':grp==='bbs'?'BBS':grp==='lagoona'?'Lagoona':'Filiale';
+    a.intermt.forEach((v,i)=>totRow2[i]+=v);
+    rows2.push([a.name, grpLabel, ...a.intermt, a.intermt.reduce((s,v)=>s+v,0)]);
+  });
+  rows2.push(['TOTAL','',...totRow2, totRow2.reduce((s,v)=>s+v,0)]);
+  const ws2 = XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols'] = [{wch:22},{wch:10},...Array(13).fill({wch:8})];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Intermt. annuels '+currentYear);
+
+  // ── Onglet 3 : Détail annuel masse salariale ──
+  const rows3 = [['Agence','Groupe',...MONTHS,'TOTAL ANNUEL']];
+  const totRow3 = new Array(12).fill(0);
+  agencies.forEach(a => {
+    const grp = getAgencyGroup(a.id);
+    const grpLabel = grp==='novelty'?'Novelty':grp==='bbs'?'BBS':grp==='lagoona'?'Lagoona':'Filiale';
+    a.masse.forEach((v,i)=>totRow3[i]+=v);
+    rows3.push([a.name, grpLabel, ...a.masse, a.masse.reduce((s,v)=>s+v,0)]);
+  });
+  rows3.push(['TOTAL','',...totRow3, totRow3.reduce((s,v)=>s+v,0)]);
+  const ws3 = XLSX.utils.aoa_to_sheet(rows3);
+  ws3['!cols'] = [{wch:22},{wch:10},...Array(13).fill({wch:12})];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Masse sal. '+currentYear);
+
+  // ── Onglet 4 : Comparaison 2025 vs 2026 ──
+  const rows4 = [['Agence','Groupe','Intermt. 2025','Intermt. 2026','Δ Intermt.','Δ% Intermt.','Bull. 2025','Bull. 2026','Δ Bull.','Δ% Bull.','Masse 2025','Masse 2026','Δ Masse']];
+  const d25 = agenciesData[2025], d26 = agenciesData[2026];
+  d26.forEach(a26 => {
+    const a25 = d25.find(a=>a.id===a26.id);
+    const grp = getAgencyGroup(a26.id);
+    const grpLabel = grp==='novelty'?'Novelty':grp==='bbs'?'BBS':grp==='lagoona'?'Lagoona':'Filiale';
+    const i25=a25?a25.intermt.reduce((s,v)=>s+v,0):0, i26=a26.intermt.reduce((s,v)=>s+v,0);
+    const b25=a25?a25.bullets.reduce((s,v)=>s+v,0):0, b26=a26.bullets.reduce((s,v)=>s+v,0);
+    const m25=a25?a25.masse.reduce((s,v)=>s+v,0):0,   m26=a26.masse.reduce((s,v)=>s+v,0);
+    const pctI = i25>0 ? ((i26-i25)/i25*100).toFixed(1)+'%' : '—';
+    const pctB = b25>0 ? ((b26-b25)/b25*100).toFixed(1)+'%' : '—';
+    rows4.push([a26.name,grpLabel,i25,i26,i26-i25,pctI,b25,b26,b26-b25,pctB,m25,m26,m26-m25]);
+  });
+  const ws4 = XLSX.utils.aoa_to_sheet(rows4);
+  ws4['!cols'] = [{wch:22},{wch:10},...Array(11).fill({wch:13})];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Comparaison 2025 vs 2026');
+
+  XLSX.writeFile(wb, 'Dashboard_Intermittents_'+currentYear+'_'+mn+'.xlsx');
+}
+
+// ============================================================
+// EXPORT PDF (print)
+// ============================================================
+function exportPDF() {
+  const mn = MONTHS[currentMonth];
+  const pr = document.getElementById('print-report');
+
+  // ── KPI global du mois ──
+  const totI = agencies.reduce((s,a)=>s+(a.intermt[currentMonth]||0),0);
+  const totB = agencies.reduce((s,a)=>s+(a.bullets[currentMonth]||0),0);
+  const totM = agencies.reduce((s,a)=>s+(a.masse[currentMonth]||0),0);
+  const totAI= agencies.reduce((s,a)=>s+a.intermt.reduce((x,v)=>x+v,0),0);
+  const totAB= agencies.reduce((s,a)=>s+a.bullets.reduce((x,v)=>x+v,0),0);
+  const totAM= agencies.reduce((s,a)=>s+a.masse.reduce((x,v)=>x+v,0),0);
+
+  function kpiBox(label, val, color) {
+    return `<div style="flex:1;background:#f8faff;border:1px solid #e8ecf0;border-radius:8px;padding:10px 14px;text-align:center;">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#95a5a6;letter-spacing:0.5px;margin-bottom:4px;">${label}</div>
+      <div style="font-size:18px;font-weight:900;color:${color};">${val}</div>
+    </div>`;
+  }
+
+  function evoLabel(cur, prev) {
+    if (!prev || !cur) return '';
+    const p = Math.round((cur-prev)/prev*100);
+    return p>0 ? `<span style="color:#27ae60;font-size:9px;font-weight:700;margin-left:4px;">▲ +${p}%</span>`
+               : p<0 ? `<span style="color:#e74c3c;font-size:9px;font-weight:700;margin-left:4px;">▼ ${p}%</span>` : '';
+  }
+
+  function makeSection(title, color, ids) {
+    const list = agencies.filter(a=>ids.includes(a.id));
+    const sI=list.reduce((s,a)=>s+(a.intermt[currentMonth]||0),0);
+    const sB=list.reduce((s,a)=>s+(a.bullets[currentMonth]||0),0);
+    const sM=list.reduce((s,a)=>s+(a.masse[currentMonth]||0),0);
+    const sAI=list.reduce((s,a)=>s+a.intermt.reduce((x,v)=>x+v,0),0);
+    const sAM=list.reduce((s,a)=>s+a.masse.reduce((x,v)=>x+v,0),0);
+    const rows = list.map(a => {
+      const i=a.intermt[currentMonth]||0, b=a.bullets[currentMonth]||0, m=a.masse[currentMonth]||0;
+      const ip=currentMonth>0?(a.intermt[currentMonth-1]||0):0;
+      const bp=currentMonth>0?(a.bullets[currentMonth-1]||0):0;
+      const ai=a.intermt.reduce((s,v)=>s+v,0), am=a.masse.reduce((s,v)=>s+v,0);
+      const cout=(m>0&&b>0)?Math.round(m/b).toLocaleString('fr-FR')+' €':'—';
+      return `<tr style="border-bottom:1px solid #f0f2f5;">
+        <td style="padding:5px 8px;font-size:10px;font-weight:600;color:#1a1a2e;">${a.name}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:11px;font-weight:700;color:#27ae60;">${i||'—'}${evoLabel(i,ip)}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:11px;font-weight:700;color:#2980b9;">${b||'—'}${evoLabel(b,bp)}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:10px;font-weight:700;color:#e67e22;">${m>0?m.toLocaleString('fr-FR')+' €':'—'}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:9px;color:#7f8c8d;">${cout}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:9px;color:#95a5a6;">${ai||'—'}</td>
+        <td style="padding:5px 8px;text-align:right;font-size:9px;color:#95a5a6;">${am>0?am.toLocaleString('fr-FR')+' €':'—'}</td>
+      </tr>`;
+    }).join('');
+    return `<div style="margin-bottom:18px;page-break-inside:avoid;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:${color}15;border-left:4px solid ${color};border-radius:0 6px 6px 0;margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:800;color:${color};">${title}</div>
+        <div style="display:flex;gap:16px;">
+          <span style="font-size:10px;color:#555;"><b style="color:#27ae60;">${sI.toLocaleString('fr-FR')}</b> intermt.</span>
+          <span style="font-size:10px;color:#555;"><b style="color:#2980b9;">${sB.toLocaleString('fr-FR')}</b> bulletins</span>
+          <span style="font-size:10px;color:#555;"><b style="color:#e67e22;">${sM>0?sM.toLocaleString('fr-FR')+' €':'—'}</b></span>
+          <span style="font-size:9px;color:#aaa;">Annuel : <b>${sAI.toLocaleString('fr-FR')} intermt. · ${sAM>0?sAM.toLocaleString('fr-FR')+' €':'—'}</b></span>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#f8f9fb;">
+          <th style="padding:5px 8px;text-align:left;font-size:9px;color:#95a5a6;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Agence</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#27ae60;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Intermt. mois</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#2980b9;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Bulletins mois</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#e67e22;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Masse sal.</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#95a5a6;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Coût/bull.</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#95a5a6;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Intermt. ann.</th>
+          <th style="padding:5px 8px;text-align:right;font-size:9px;color:#95a5a6;text-transform:uppercase;font-weight:700;border-bottom:1px solid #e8ecf0;">Masse ann.</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }
+
+  const noveltyIds=GROUPS.novelty.ids, bbsIds=GROUPS.bbs.ids, lagoonaIds=GROUPS.lagoona.ids, otherIds=GROUPS.other.ids;
+
+  pr.innerHTML = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:900px;margin:0 auto;padding:20px;">
+    <!-- En-tête -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid #2ecc71;">
+      <div>
+        <div style="font-size:20px;font-weight:900;color:#1a1a2e;">Rapport — Dashboard Intermittents</div>
+        <div style="font-size:11px;color:#95a5a6;margin-top:3px;">${mn} ${currentYear} &nbsp;·&nbsp; Généré le ${new Date().toLocaleDateString('fr-FR')} &nbsp;·&nbsp; 17 agences</div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:#7f8c8d;">
+        <div style="font-weight:700;font-size:13px;color:#1a1a2e;">Novelty &amp; Filiales</div>
+        <div>Cumul ${mn} ${currentYear}</div>
+      </div>
+    </div>
+
+    <!-- KPIs globaux mois -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#95a5a6;letter-spacing:0.5px;margin-bottom:6px;">Totaux ${mn} ${currentYear} — toutes agences</div>
+      <div style="display:flex;gap:8px;">
+        ${kpiBox('Intermittents mois', totI.toLocaleString('fr-FR'), '#27ae60')}
+        ${kpiBox('Bulletins mois', totB.toLocaleString('fr-FR'), '#2980b9')}
+        ${kpiBox('Masse sal. mois', totM>0?totM.toLocaleString('fr-FR')+' €':'—', '#e67e22')}
+        ${kpiBox('Intermt. annuels cumulés', totAI.toLocaleString('fr-FR'), '#27ae60')}
+        ${kpiBox('Masse ann. cumulée', totAM>0?totAM.toLocaleString('fr-FR')+' €':'—', '#e67e22')}
+      </div>
+    </div>
+
+    <!-- Sections par groupe -->
+    ${makeSection('🔵 Novelty France', '#2980b9', noveltyIds)}
+    ${makeSection('🟠 BBS', '#e67e22', bbsIds)}
+    ${makeSection('🟠 Lagoona', '#e67e22', lagoonaIds)}
+    ${makeSection('🟠 Filiales (On Stage · Potar · De Préf · Planet Live · Music Live)', '#9b59b6', otherIds)}
+  </div>`;
+
+  window.print();
+}
+
+// Init: force full refresh via selectYear so everything renders correctly
+selectYear(2026);
 </script>
 </body>
 </html>

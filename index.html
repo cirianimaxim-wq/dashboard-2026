@@ -263,6 +263,33 @@
   body.dark .legend-item { color: #86CCED !important; }
   body.dark ::-webkit-scrollbar-track { background: #0f1117; }
   body.dark ::-webkit-scrollbar-thumb { background: #02399F; }
+
+  .legend-filter-btn {
+    display:flex;align-items:center;gap:7px;width:100%;
+    padding:5px 8px;border-radius:7px;border:1.5px solid transparent;
+    background:#f8f9fb;color:#3D4450;font-size:11px;font-weight:600;
+    cursor:pointer;transition:all 0.18s;text-align:left;font-family:'Segoe UI',sans-serif;
+  }
+  .legend-filter-btn.active {
+    background:var(--grp-color, #02399F)15;
+    border-color:var(--grp-color, #02399F)55;
+    color:var(--grp-color, #02399F);
+  }
+  .legend-filter-btn:not(.active) {
+    background:#f0f0f0;color:#aaa;border-color:#ddd;
+    opacity:0.6;
+  }
+  .legend-filter-btn:hover { opacity:1 !important; filter:brightness(1.05); }
+  .legend-filter-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+  .legend-filter-count { margin-left:auto;font-size:10px;font-weight:700;opacity:0.8; }
+  .legend-zoom-btn {
+    padding:3px 8px;border-radius:20px;border:1px solid;
+    background:transparent;font-size:9px;font-weight:700;
+    cursor:pointer;transition:all 0.15s;font-family:'Segoe UI',sans-serif;
+  }
+  .legend-zoom-btn:hover { opacity:0.75; }
+  body.dark .legend-filter-btn:not(.active) { background:#1e2535;border-color:#2d3748;color:#4a5568; }
+  body.dark .legend-zoom-btn { opacity:0.8; }
 </style>
 </head>
 <body>
@@ -359,14 +386,51 @@
 
 <div class="main">
   <div id="map">
-    <div class="legend">
-      <div class="legend-title">Entreprises</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#02399f"></div>Novelty</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#882a23"></div>BBS · <span style="background:#ed6f15;display:inline-block;width:6px;height:8px;border-radius:50%;margin:0 2px;"></span>On Stage · <span style="background:#16172f;display:inline-block;width:6px;height:8px;border-radius:50%;margin:0 2px;"></span>Potar · De Préf · <span style="background:#86cced;display:inline-block;width:6px;height:8px;border-radius:50%;margin:0 2px;"></span>Lagoona</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#9b59b6"></div>Planet Live · Music Live</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#ccc"></div>Aucune donnée ce mois</div>
-      <div style="margin-top:10px;border-top:1px solid #f0f2f5;padding-top:8px;">
-        <div class="legend-title" style="margin-bottom:6px;">Couches</div>
+    <div class="legend" style="min-width:170px;">
+      <div class="legend-title">Groupes &amp; filtres</div>
+
+      <!-- Filter buttons -->
+      <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
+        <button onclick="toggleGroupFilter('novelty')" id="flt-novelty"
+          class="legend-filter-btn active" style="--grp-color:#02399F;">
+          <span class="legend-filter-dot" style="background:#02399F;"></span>
+          Novelty France
+          <span class="legend-filter-count" id="flt-count-novelty"></span>
+        </button>
+        <button onclick="toggleGroupFilter('bbs')" id="flt-bbs"
+          class="legend-filter-btn active" style="--grp-color:#882a23;">
+          <span class="legend-filter-dot" style="background:#882a23;"></span>
+          BBS
+          <span class="legend-filter-count" id="flt-count-bbs"></span>
+        </button>
+        <button onclick="toggleGroupFilter('lagoona')" id="flt-lagoona"
+          class="legend-filter-btn active" style="--grp-color:#86cced;">
+          <span class="legend-filter-dot" style="background:#86cced;"></span>
+          Lagoona
+          <span class="legend-filter-count" id="flt-count-lagoona"></span>
+        </button>
+        <button onclick="toggleGroupFilter('other')" id="flt-other"
+          class="legend-filter-btn active" style="--grp-color:#ed6f15;">
+          <span class="legend-filter-dot" style="background:#ed6f15;"></span>
+          Filiales
+          <span class="legend-filter-count" id="flt-count-other"></span>
+        </button>
+      </div>
+
+      <!-- Zoom buttons -->
+      <div style="border-top:1px solid #f0f2f5;padding-top:8px;margin-bottom:8px;">
+        <div class="legend-title" style="margin-bottom:5px;">Zoom groupe</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <button onclick="zoomToGroup('novelty')" class="legend-zoom-btn" style="border-color:#02399F;color:#02399F;">Novelty</button>
+          <button onclick="zoomToGroup('bbs')"     class="legend-zoom-btn" style="border-color:#882a23;color:#882a23;">BBS</button>
+          <button onclick="zoomToGroup('lagoona')" class="legend-zoom-btn" style="border-color:#86cced;color:#86cced;">Lagoona</button>
+          <button onclick="zoomToGroup('other')"   class="legend-zoom-btn" style="border-color:#ed6f15;color:#ed6f15;">Filiales</button>
+          <button onclick="zoomToGroup('all')"      class="legend-zoom-btn" style="border-color:#3D4450;color:#3D4450;">France</button>
+        </div>
+      </div>
+
+      <!-- Dark mode -->
+      <div style="border-top:1px solid #f0f2f5;padding-top:8px;">
         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;cursor:pointer;">
           <input type="checkbox" id="toggle-darkmode" onchange="toggleDarkMode(this.checked)" style="accent-color:#1a1a2e;"> 🌙 Mode nuit
         </label>
@@ -1813,6 +1877,81 @@ function exportPDF() {
 
 // Init: force full refresh via selectYear so everything renders correctly
 selectYear(2026);
+
+
+// ── Group filter state ──
+const activeGroups = new Set(['novelty','bbs','lagoona','other']);
+
+function getGroupForId(id) { return getAgencyGroup(id) || 'other'; }
+
+function toggleGroupFilter(grp) {
+  if (activeGroups.has(grp)) {
+    if (activeGroups.size === 1) return; // keep at least 1
+    activeGroups.delete(grp);
+  } else {
+    activeGroups.add(grp);
+  }
+  document.getElementById('flt-' + grp).classList.toggle('active', activeGroups.has(grp));
+  applyGroupFilter();
+}
+
+function applyGroupFilter() {
+  agencies.forEach(a => {
+    const grp = getGroupForId(a.id);
+    const visible = activeGroups.has(grp);
+    const m = markers[a.id];
+    if (visible) {
+      if (!map.hasLayer(m)) m.addTo(map);
+    } else {
+      if (map.hasLayer(m)) map.removeLayer(m);
+    }
+  });
+  updateFilterCounts();
+}
+
+function updateFilterCounts() {
+  ['novelty','bbs','lagoona','other'].forEach(grp => {
+    const ids = GROUPS[grp].ids;
+    const total = agencies.filter(a => ids.includes(a.id) && (a.intermt[currentMonth]||0) > 0)
+                          .reduce((s,a) => s + (a.intermt[currentMonth]||0), 0);
+    const el = document.getElementById('flt-count-' + grp);
+    if (el) el.textContent = total > 0 ? total.toLocaleString('fr-FR') : '';
+  });
+}
+
+function zoomToGroup(grp) {
+  let ids;
+  if (grp === 'all') {
+    map.setView([46.5, 2.5], 6);
+    return;
+  }
+  ids = GROUPS[grp]?.ids || [];
+  const points = agencies
+    .filter(a => ids.includes(a.id))
+    .map(a => [a.lat, a.lng]);
+  if (points.length === 0) return;
+  if (points.length === 1) {
+    map.setView(points[0], 9);
+    return;
+  }
+  const bounds = L.latLngBounds(points);
+  map.fitBounds(bounds, { padding: [60, 60], maxZoom: 10 });
+  // Also activate filter to highlight group
+  activeGroups.clear();
+  activeGroups.add(grp);
+  ['novelty','bbs','lagoona','other'].forEach(g => {
+    document.getElementById('flt-' + g).classList.toggle('active', g === grp);
+  });
+  applyGroupFilter();
+  // Re-show all after 2.5s
+  setTimeout(() => {
+    ['novelty','bbs','lagoona','other'].forEach(g => {
+      activeGroups.add(g);
+      document.getElementById('flt-' + g).classList.add('active');
+    });
+    applyGroupFilter();
+  }, 2500);
+}
 
 </script>
 </body>

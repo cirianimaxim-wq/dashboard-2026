@@ -327,31 +327,32 @@
       </div>
     </div>
 
-    <!-- SELECTED AGENCY annual boxes -->
-    <div style="display:flex;align-items:center;gap:6px;">
-      <div id="agency-label" style="font-size:10px;color:#95a5a6;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-right:4px;white-space:nowrap;">—</div>
-      <div class="header-kpi-badge" style="border-color:#d1f2de;background:linear-gradient(135deg,#f0fdf4,#fff);">
-        <div class="header-kpi-icon">👥</div>
+    <!-- TOTAL MENSUEL (moved from sidebar) -->
+    <div style="display:flex;align-items:center;gap:6px;padding-right:12px;border-right:1px solid #e8ecf0;">
+      <div id="kpi-strip-title" style="font-size:10px;color:#8CE7E9;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-right:4px;white-space:nowrap;">Total Janv · Novelty &amp; Filiales</div>
+      <div class="header-kpi-badge" style="border-color:rgba(140,231,233,0.4);background:rgba(255,255,255,0.12);">
         <div>
-          <div class="header-kpi-label">Intermt. annuels</div>
-          <div class="header-kpi-value" id="header-intermt" style="color:#02399F;">—</div>
+          <div class="header-kpi-label" style="color:rgba(255,255,255,0.6);">Intermittents</div>
+          <div class="header-kpi-value kpi-green" id="kpi-intermt" style="color:#8CE7E9;">—</div>
+          <div id="kpi-intermt-sub" style="font-size:9px;color:rgba(255,255,255,0.4);">ce mois</div>
         </div>
       </div>
-      <div class="header-kpi-badge" style="border-color:#bfdbfe;background:linear-gradient(135deg,#EBF2F6,#fff);">
-        <div class="header-kpi-icon">📄</div>
+      <div class="header-kpi-badge" style="border-color:rgba(140,231,233,0.4);background:rgba(255,255,255,0.12);">
         <div>
-          <div class="header-kpi-label">Bulletins annuels</div>
-          <div class="header-kpi-value" id="header-bullets" style="color:#2980b9;">—</div>
+          <div class="header-kpi-label" style="color:rgba(255,255,255,0.6);">Bulletins</div>
+          <div class="header-kpi-value kpi-blue" id="kpi-bullets" style="color:#86CCED;">—</div>
+          <div id="kpi-bullets-sub" style="font-size:9px;color:rgba(255,255,255,0.4);">ce mois</div>
         </div>
       </div>
-      <div class="header-kpi-badge" style="border-color:#fed7aa;background:linear-gradient(135deg,#fff7ed,#fff);">
-        <div class="header-kpi-icon">💰</div>
+      <div class="header-kpi-badge" style="border-color:rgba(140,231,233,0.4);background:rgba(255,255,255,0.12);">
         <div>
-          <div class="header-kpi-label">Masse ann.</div>
-          <div class="header-kpi-value" id="header-masse-total" style="color:#e67e22;">—</div>
+          <div class="header-kpi-label" style="color:rgba(255,255,255,0.6);">Ratio</div>
+          <div class="header-kpi-value kpi-pink" id="kpi-ratio" style="color:#FCD34D;">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);">bull./intermt.</div>
         </div>
       </div>
     </div>
+
 
     <div class="header-badge">🇫🇷 17 agences</div>
   </div>
@@ -439,29 +440,6 @@
   </div>
 
   <div class="sidebar">
-    <!-- KPI strip context title -->
-    <div id="kpi-strip-title" style="padding:8px 14px 4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#02399F;background:#EBF2F6;border-bottom:1px solid #c0d4e8;">
-      Total Janvier · Novelty &amp; Filiales
-    </div>
-    <!-- KPI strip -->
-    <div class="kpi-strip">
-      <div class="kpi-item">
-        <div class="kpi-item-label">Intermittents</div>
-        <div class="kpi-item-value kpi-green" id="kpi-intermt">—</div>
-        <div class="kpi-item-sub" id="kpi-intermt-sub">ce mois</div>
-      </div>
-      <div class="kpi-item">
-        <div class="kpi-item-label">Bulletins</div>
-        <div class="kpi-item-value kpi-blue" id="kpi-bullets">—</div>
-        <div class="kpi-item-sub" id="kpi-bullets-sub">ce mois</div>
-      </div>
-      <div class="kpi-item">
-        <div class="kpi-item-label">Ratio</div>
-        <div class="kpi-item-value kpi-pink" id="kpi-ratio">—</div>
-        <div class="kpi-item-sub">bull./intermt.</div>
-      </div>
-    </div>
-
     <!-- Agency panel -->
     <div class="agency-panel" style="padding:0;">
 
@@ -524,6 +502,27 @@
 
 
 
+      </div>
+    </div>
+
+    <!-- AGENCY ANNUAL (moved from header) -->
+    <div id="agency-annual-strip" style="display:none;border-bottom:1px solid #e8ecf0;">
+      <div id="kpi-strip-title-agency" style="padding:8px 14px 4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:#02399F;background:#EBF2F6;border-bottom:1px solid #c0d4e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        — · Annuel
+      </div>
+      <div style="display:flex;">
+        <div class="kpi-item">
+          <div class="kpi-item-label">Intermt. ann.</div>
+          <div class="kpi-item-value kpi-green" id="header-intermt">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-item-label">Bulletins ann.</div>
+          <div class="kpi-item-value kpi-blue" id="header-bullets">—</div>
+        </div>
+        <div class="kpi-item">
+          <div class="kpi-item-label">Masse ann.</div>
+          <div class="kpi-item-value kpi-orange" id="header-masse-total">—</div>
+        </div>
       </div>
     </div>
 
@@ -592,7 +591,7 @@ const agenciesData = {
   { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[101, 99, 100, 104, 156, 192, 157, 82, 205, 169, 107, 100], bullets:[102, 100, 101, 106, 158, 198, 157, 83, 211, 174, 0, 0], masse:[50089, 65409, 74390, 75309, 162575, 309967, 162062, 54538, 216149, 143270, 61178, 63190], masse_total:1438125 },
   { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[73, 32, 67, 99, 51, 74, 54, 56, 51, 55, 77, 53], bullets:[75, 32, 69, 100, 52, 76, 54, 56, 52, 57, 0, 0], masse:[70875, 27920, 64743, 79570, 41361, 88683, 54056, 28542, 37231, 47442, 81384, 39420], masse_total:661227 },
   { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[625, 431, 686, 425, 442, 698, 523, 189, 800, 821, 514, 393], bullets:[641, 434, 713, 437, 452, 720, 532, 189, 817, 840, 0, 0], masse:[1095552, 533227, 1265413, 549274, 716159, 1327652, 731986, 218592, 1257320, 1283990, 675893, 463304], masse_total:10118365 },
-  { id:'onstage', name:'On Stage', address:'237 Rte de Larcan, 31800 Saint-Ignan', lat:43.5089, lng:1.2278, color:'#e67e22', intermt:[10, 8, 6, 12, 35, 68, 80, 49, 37, 23, 18, 24], bullets:[10, 8, 6, 12, 35, 68, 80, 51, 37, 23, 0, 0], masse:[9200, 3320, 8399, 7626, 43344, 148045, 156823, 68071, 39108, 15408, 14223, 34482], masse_total:548048 },
+  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[10, 8, 6, 12, 35, 68, 80, 49, 37, 23, 18, 24], bullets:[10, 8, 6, 12, 35, 68, 80, 51, 37, 23, 0, 0], masse:[9200, 3320, 8399, 7626, 43344, 148045, 156823, 68071, 39108, 15408, 14223, 34482], masse_total:548048 },
   { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[40, 52, 58, 56, 63, 74, 51, 21, 54, 46, 58, 51], bullets:[41, 53, 58, 57, 64, 75, 52, 21, 55, 47, 0, 0], masse:[56742, 55606, 54711, 56406, 52678, 64039, 50385, 24185, 49692, 41815, 50582, 46013], masse_total:602854 },
   { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
   { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
@@ -600,23 +599,23 @@ const agenciesData = {
   { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:0 },
 ],
   2026: [
-  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[330, 1000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:1330 },
-  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[530, 610, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:1140 },
-  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[6555, 7402, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:13957 },
-  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[127348, 40054, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:167402 },
-  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 138, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 239, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[183410, 81067, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:264477 },
-  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[40198, 22300, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:62498 },
-  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[37578, 11728, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:49306 },
-  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 109, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[24473, 31637, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:56110 },
-  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 137, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[48422, 38182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:86604 },
-  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[61, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[230, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[59713, 27035, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:86748 },
-  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[660, 476, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2399, 1323, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[1176671, 598068, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:1774739 },
-  { id:'onstage', name:'On Stage', address:'237 Rte de Larcan, 31800 Saint-Ignan', lat:43.5089, lng:1.2278, color:'#e67e22', intermt:[18, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[52, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[25435, 15857, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:41292 },
-  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[57, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[93, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[41965, 9460, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:51425 },
-  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[22, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[29, 33, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[15285, 18383, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:33668 },
-  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[5365, 4570, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:9935 },
-  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[33, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[9563, 3340, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:12903 },
-  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[57, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[141, 124, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[74593, 3323, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:77916 },
+  { id:'bbs_mougins', name:'BBS Mougins', address:'144 Chemin de la Plaine, 06250 Mougins', lat:43.607205, lng:6.974094, color:'#e67e22', intermt:[1, 1, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2, 3, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[330, 1000, 4330, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:5660 },
+  { id:'bbs_marseille', name:'BBS Marseille', address:'49 Bd de l\'Europe, 13127 Vitrolles', lat:43.439834, lng:5.242772, color:'#e67e22', intermt:[2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[3, 4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[530, 610, 150, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:1290 },
+  { id:'bbs_paris', name:'BBS Paris', address:'Rue George Sand, 91160 Longjumeau', lat:48.702309, lng:2.300603, color:'#e67e22', intermt:[9, 10, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[16, 18, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[6555, 7402, 4790, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:18747 },
+  { id:'depref', name:'De Préf', address:'Rue George Sand, 91160 Longjumeau', lat:48.701894, lng:2.301846, color:'#e67e22', intermt:[59, 43, 69, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[198, 98, 234, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[127348, 40054, 146781, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:314183 },
+  { id:'novelty_aura', name:'Novelty Aura', address:'5 impasse Pascal, 69680 Chassieu', lat:45.722625, lng:4.973213, color:'#2980b9', intermt:[217, 138, 104, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[602, 239, 180, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[183410, 81067, 62753, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:327230 },
+  { id:'novelty_azur', name:'Novelty Azur', address:'242 av. Jean Mermoz, 06210 Mandelieu-la-Napoule', lat:43.563295, lng:6.950072, color:'#2980b9', intermt:[53, 37, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[123, 62, 307, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[40198, 22300, 150986, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:213484 },
+  { id:'novelty_go', name:'Novelty Grand-Ouest', address:'13 Rue Véga, 44470 Carquefou', lat:47.28019, lng:-1.46318, color:'#2980b9', intermt:[41, 20, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[118, 44, 66, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[37578, 11728, 23214, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:72520 },
+  { id:'novelty_normandie', name:'Novelty Normandie', address:'2 Chemin de Cheux, Villers-Bocage (14)', lat:49.082606, lng:-0.668026, color:'#2980b9', intermt:[33, 48, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[74, 109, 108, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[24473, 31637, 33300, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:89410 },
+  { id:'novelty_bordeaux', name:'Novelty Bordeaux', address:'Rue Thierry Sabine, 33700 Mérignac', lat:44.840012, lng:-0.72275, color:'#2980b9', intermt:[95, 65, 142, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[161, 137, 328, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[48422, 38182, 97232, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:183836 },
+  { id:'novelty_toulouse', name:'Novelty Toulouse', address:'12 Rue du Négoce, 31650 Saint-Orens-de-Gameville', lat:43.562665, lng:1.528719, color:'#2980b9', intermt:[61, 37, 54, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[230, 115, 183, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[59713, 27035, 52453, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:139201 },
+  { id:'novelty_paris', name:'Novelty Paris', address:'Rue George Sand, ZI La Vigne aux Loups, 91160 Longjumeau', lat:48.702394, lng:2.302511, color:'#2980b9', intermt:[660, 476, 757, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[2399, 1323, 2619, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[1176671, 598068, 1317530, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:3092269 },
+  { id:'onstage', name:'On Stage', address:'2 rue Pierre Semard, 27930 Gravigny', lat:49.054496, lng:1.169818, color:'#e67e22', intermt:[18, 26, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[52, 47, 62, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[25435, 15857, 17615, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:58907 },
+  { id:'potar', name:'Potar', address:'Rue George Sand, 91160 Longjumeau', lat:48.70261, lng:2.300764, color:'#e67e22', intermt:[57, 16, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[93, 32, 41, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[41965, 9460, 14690, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:66115 },
+  { id:'planet_live', name:'Planet Live', address:'22 Rue Marcel Dassault, 93140 Bondy', lat:48.888114, lng:2.48359, color:'#9b59b6', intermt:[22, 23, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[29, 33, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[15285, 18383, 15274, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:48942 },
+  { id:'music_live', name:'Music Live', address:'3 Rue Arthur Auger, 92120 Montrouge', lat:48.815844, lng:2.308724, color:'#9b59b6', intermt:[7, 7, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[8, 7, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[5365, 4570, 5288, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:15223 },
+  { id:'lagoona_belfort', name:'Lagoona Belfort', address:'318C Rue des Terres Rouges, 25490 Allenjoie', lat:47.5347, lng:6.8683, color:'#e67e22', intermt:[15, 6, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[33, 12, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[9563, 3340, 17267, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:30170 },
+  { id:'lagoona_mun', name:'Lagoona Mun', address:'13 rue Vauban, 67450 Mundolsheim', lat:48.636508, lng:7.719652, color:'#e67e22', intermt:[57, 49, 47, 0, 0, 0, 0, 0, 0, 0, 0, 0], bullets:[141, 124, 134, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse:[74593, 3323, 52137, 0, 0, 0, 0, 0, 0, 0, 0, 0], masse_total:130053 },
 ]
 };
 
@@ -638,7 +637,7 @@ const monthHasDataByYear = {
   2026: [
   true,  // Janv
   true,  // Fév
-  false,  // Mars
+  true,  // Mars
   false,  // Avril
   false,  // Mai
   false,  // Juin
@@ -1037,15 +1036,18 @@ function updateKPIs() {
     const agI = ag.intermt.reduce((s,v)=>s+v,0);
     const agB = ag.bullets.reduce((s,v)=>s+v,0);
     const agM = ag.masse.reduce((s,v)=>s+v,0);
-    document.getElementById('agency-label').textContent = ag.name + ' · Annuel';
+    document.getElementById('kpi-strip-title-agency').textContent = ag.name + ' · Annuel';
     document.getElementById('header-intermt').textContent = fmtN(agI);
     document.getElementById('header-bullets').textContent = fmtN(agB);
     document.getElementById('header-masse-total').textContent = fmtE(agM);
+    document.getElementById('agency-annual-strip').style.display = 'block';
+    document.getElementById('kpi-strip-title-agency').textContent = ag.name + ' · Annuel';
   } else {
-    document.getElementById('agency-label').textContent = '—';
+    // agency-label no longer used
     document.getElementById('header-intermt').textContent = '—';
     document.getElementById('header-bullets').textContent = '—';
     document.getElementById('header-masse-total').textContent = '—';
+    document.getElementById('agency-annual-strip').style.display = 'none';
   }
 
   // Dynamic group blocks
